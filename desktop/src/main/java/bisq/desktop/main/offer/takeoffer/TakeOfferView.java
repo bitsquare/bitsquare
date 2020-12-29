@@ -880,7 +880,9 @@ public class TakeOfferView extends ActivatableViewAndModel<AnchorPane, TakeOffer
         GridPane.setMargin(advancedOptionsBox, new Insets(Layout.COMPACT_FIRST_ROW_AND_GROUP_DISTANCE, 0, 0, 0));
         gridPane.getChildren().add(advancedOptionsBox);
 
-        advancedOptionsBox.getChildren().addAll(getTradeFeeFieldsBox());
+        Tuple2<AutoTooltipButton, VBox> buyBsqButtonBox = OfferViewUtil.createBuyBsqButtonBox(navigation, model.dataModel.preferences);
+
+        advancedOptionsBox.getChildren().addAll(getTradeFeeFieldsBox(), buyBsqButtonBox.second);
     }
 
     private void addButtons() {

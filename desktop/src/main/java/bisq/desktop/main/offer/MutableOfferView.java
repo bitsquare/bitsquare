@@ -132,7 +132,7 @@ public abstract class MutableOfferView<M extends MutableOfferViewModel<?>> exten
     private TitledGroupBg payFundsTitledGroupBg, setDepositTitledGroupBg, paymentTitledGroupBg;
     protected TitledGroupBg amountTitledGroupBg;
     private BusyAnimation waitingForFundsSpinner;
-    private AutoTooltipButton nextButton, cancelButton1, cancelButton2, placeOfferButton;
+    private AutoTooltipButton nextButton, cancelButton1, cancelButton2, placeOfferButton, buyBsqButton;
     private Button priceTypeToggleButton;
     private InputTextField fixedPriceTextField, marketBasedPriceTextField, triggerPriceInputTextField;
     protected InputTextField amountTextField, minAmountTextField, volumeTextField, buyerSecurityDepositInputTextField;
@@ -261,6 +261,8 @@ public abstract class MutableOfferView<M extends MutableOfferViewModel<?>> exten
                 tradeFeeInBtcToggle.setManaged(false);
                 tradeFeeInBsqToggle.setVisible(false);
                 tradeFeeInBsqToggle.setManaged(false);
+                buyBsqButton.setVisible(false);
+                buyBsqButton.setManaged(false);
             }
 
             Label popOverLabel = OfferViewUtil.createPopOverLabel(Res.get("createOffer.triggerPrice.tooltip"));
@@ -384,6 +386,9 @@ public abstract class MutableOfferView<M extends MutableOfferViewModel<?>> exten
         cancelButton1.setVisible(false);
         cancelButton1.setManaged(false);
         cancelButton1.setOnAction(null);
+        buyBsqButton.setVisible(false);
+        buyBsqButton.setManaged(false);
+        buyBsqButton.setOnAction(null);
 
         tradeFeeInBtcToggle.setMouseTransparent(true);
         tradeFeeInBsqToggle.setMouseTransparent(true);
@@ -853,6 +858,7 @@ public abstract class MutableOfferView<M extends MutableOfferViewModel<?>> exten
             if (DevEnv.isDaoActivated()) {
                 tradeFeeInBtcToggle.setVisible(newValue);
                 tradeFeeInBsqToggle.setVisible(newValue);
+                buyBsqButton.setVisible(newValue);
             }
         };
 
@@ -1069,7 +1075,11 @@ public abstract class MutableOfferView<M extends MutableOfferViewModel<?>> exten
         GridPane.setMargin(advancedOptionsBox, new Insets(Layout.COMPACT_FIRST_ROW_AND_GROUP_DISTANCE, 0, 0, 0));
         gridPane.getChildren().add(advancedOptionsBox);
 
-        advancedOptionsBox.getChildren().addAll(getBuyerSecurityDepositBox(), getTradeFeeFieldsBox());
+        Tuple2<AutoTooltipButton, VBox> buyBsqButtonBox = OfferViewUtil.createBuyBsqButtonBox(navigation, preferences);
+        buyBsqButton = buyBsqButtonBox.first;
+        buyBsqButton.setVisible(false);
+
+        advancedOptionsBox.getChildren().addAll(getBuyerSecurityDepositBox(), getTradeFeeFieldsBox(), buyBsqButtonBox.second);
 
         Tuple2<Button, Button> tuple = add2ButtonsAfterGroup(gridPane, ++gridRow,
                 Res.get("shared.nextStep"), Res.get("shared.cancel"));
