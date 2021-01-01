@@ -325,7 +325,7 @@ public abstract class MutableOfferView<M extends MutableOfferViewModel<?>> exten
             showInsufficientBsqFundsForBtcFeePaymentPopup();
     }
 
-    // called form parent as the view does not get notified when the tab is closed
+    // called from parent as the view does not get notified when the tab is closed
     public void onClose() {
         // we use model.placeOfferCompleted to not react on close which was triggered by a successful placeOffer
         if (model.getDataModel().getBalance().get().isPositive() && !model.placeOfferCompleted.get()) {

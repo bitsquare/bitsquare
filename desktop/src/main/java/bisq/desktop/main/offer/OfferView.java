@@ -223,7 +223,7 @@ public abstract class OfferView extends ActivatableView<TabPane, Void> {
             // in different graphs
             takeOfferView = (TakeOfferView) view;
             takeOfferView.initWithData(offer);
-            takeOfferPane = ((TakeOfferView) view).getRoot();
+            takeOfferPane = takeOfferView.getRoot();
             takeOfferTab = new Tab(getTakeOfferTabName());
             takeOfferTab.setClosable(true);
             // close handler from close on take offer action
@@ -252,7 +252,7 @@ public abstract class OfferView extends ActivatableView<TabPane, Void> {
         return arbitratorManager.getObservableMap().values().stream()
                 .flatMap(arbitrator -> arbitrator.getLanguageCodes().stream())
                 .distinct()
-                .map(languageCode -> LanguageUtil.getDisplayName(languageCode))
+                .map(LanguageUtil::getDisplayName)
                 .collect(Collectors.joining(", "));
     }
 
