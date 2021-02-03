@@ -23,7 +23,7 @@ dependencyVerification {
         'com.github.bisq-network.netlayer:tor.external:a3606a592d6b6caa6a2fb7db224eaf43c6874c6730da4815bd37ad686b283dcb',
         'com.github.bisq-network.netlayer:tor.native:b15aba7fe987185037791c7ec7c529cb001b90d723d047d54aab87aceb3b3d45',
         'com.github.bisq-network.netlayer:tor:a974190aa3a031067ccd1dda28a3ae58cad14060792299d86ea38a05fb21afc5',
-        'com.github.bisq-network:bitcoinj:65ed08fa5777ea4a08599bdd575e7dc1f4ba2d4d5835472551439d6f6252e68a',
+        //'com.github.bisq-network:bitcoinj:65ed08fa5777ea4a08599bdd575e7dc1f4ba2d4d5835472551439d6f6252e68a',
         'com.github.cd2357.tor-binary:tor-binary-geoip:ae27b6aca1a3a50a046eb11e38202b6d21c2fcd2b8643bbeb5ea85e065fbc1be',
         'com.github.cd2357.tor-binary:tor-binary-linux32:7b5d6770aa442ef6d235e8a9bfbaa7c62560690f9fe69ff03c7a752eae84f7dc',
         'com.github.cd2357.tor-binary:tor-binary-linux64:24111fa35027599a750b0176392dc1e9417d919414396d1b221ac2e707eaba76',

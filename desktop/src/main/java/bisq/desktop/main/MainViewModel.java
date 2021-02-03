@@ -474,6 +474,15 @@ public class MainViewModel implements ViewModel, BisqSetup.BisqSetupListener {
                 }
             });
         }
+
+        walletsSetup.setDisplayUserBtcNodeMisconfigurationHandler(
+                (String peer) ->
+                    new Popup()
+                        .hideCloseButton()
+                        .warning(Res.get("popup.warning.userBtcNodeMisconfigured.explanation", peer))
+                        .useShutDownButton()
+                        .show()
+                );
     }
 
     private void showRevolutAccountUpdateWindow(List<RevolutAccount> revolutAccountList) {

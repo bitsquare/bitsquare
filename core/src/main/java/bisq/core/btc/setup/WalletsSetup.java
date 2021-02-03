@@ -46,6 +46,7 @@ import org.bitcoinj.core.Context;
 import org.bitcoinj.core.NetworkParameters;
 import org.bitcoinj.core.Peer;
 import org.bitcoinj.core.PeerAddress;
+import org.bitcoinj.core.VersionMessage;
 import org.bitcoinj.core.PeerGroup;
 import org.bitcoinj.core.RejectMessage;
 import org.bitcoinj.core.listeners.DownloadProgressTracker;
@@ -91,10 +92,12 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import org.jetbrains.annotations.NotNull;
@@ -140,6 +143,10 @@ public class WalletsSetup {
     public final BooleanProperty shutDownComplete = new SimpleBooleanProperty();
     private final boolean useAllProvidedNodes;
     private WalletConfig walletConfig;
+
+    @Setter
+    @Nullable
+    private Consumer<String> displayUserBtcNodeMisconfigurationHandler;
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     // Constructor
@@ -214,6 +221,10 @@ public class WalletsSetup {
                 // We don't want to get our node white list polluted with nodes from AddressMessage calls.
                 if (preferences.getBitcoinNodes() != null && !preferences.getBitcoinNodes().isEmpty())
                     peerGroup.setAddPeersFromAddressMessage(false);
+
+                peerGroup.addVersionMessageReceivedEventListener((peer, versionMessage) -> {
+                    UserThread.execute(() -> handleConfiguration(peer, versionMessage));
+                });
 
                 peerGroup.addConnectedEventListener((peer, peerCount) -> {
                     // We get called here on our user thread
@@ -409,6 +420,64 @@ public class WalletsSetup {
         networkConfig.proposePeers(peers);
     }
 
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // Peer configuration check
+    ///////////////////////////////////////////////////////////////////////////////////////////
+
+    /* Provided a Peer and its VersionMessage, will check and handle Peer's advertised
+     * configuration. The VersionMessage is provided separately, because it is not
+     * always available and this is meant to be called from a listener that is triggered
+     * when the VersionMessage becomes available.
+     */
+    private void handleConfiguration(Peer peer, VersionMessage versionMessage) {
+        var wellConfigured = isWellConfigured(versionMessage);
+        if (wellConfigured) {
+            log.info("Peer well configured: {}", peer);
+        } else {
+            log.error("Peer _badly_ configured (pruning and/or bloom filters disabled): {}", peer);
+            var usingLocalNode = localBitcoinNode.shouldBeUsed();
+            var usingCustomNodes =
+                BtcNodes.BitcoinNodesOption.CUSTOM.ordinal() == preferences.getBitcoinNodesOptionOrdinal();
+            if (usingLocalNode || usingCustomNodes) {
+                displayUserBtcNodeMisconfigurationHandler.accept(peer.toString());
+            }
+        }
+    }
+
+    private static boolean isWellConfigured(VersionMessage versionMessage) {
+        var notPruning = versionMessage.hasBlockChain();
+        var supportsAndAllowsBloomFilters =
+            isBloomFilteringSupportedAndEnabled(versionMessage);
+        return notPruning && supportsAndAllowsBloomFilters;
+    }
+
+    /**
+     * Method backported from upstream bitcoinj: at the time of writing, our version is
+     * not BIP111-aware. Source routines and data can be found in bitcoinj under:
+     * core/src/main/java/org/bitcoinj/core/VersionMessage.java
+     * and core/src/main/java/org/bitcoinj/core/NetworkParameters.java
+     */
+    @SuppressWarnings("UnnecessaryLocalVariable")
+    private static boolean isBloomFilteringSupportedAndEnabled(VersionMessage versionMessage) {
+        // A service bit that denotes whether the peer supports BIP37 bloom filters or
+        // not. The service bit is defined in BIP111.
+        int NODE_BLOOM = 1 << 2;
+
+        int BLOOM_FILTERS_BIP37_PROTOCOL_VERSION = 70000;
+        var whenBloomFiltersWereIntroduced = BLOOM_FILTERS_BIP37_PROTOCOL_VERSION;
+
+        int BLOOM_FILTERS_BIP111_PROTOCOL_VERSION = 70011;
+        var whenBloomFiltersWereDisabledByDefault = BLOOM_FILTERS_BIP111_PROTOCOL_VERSION;
+
+        int clientVersion = versionMessage.clientVersion;
+        long localServices = versionMessage.localServices;
+
+        if (clientVersion >= whenBloomFiltersWereIntroduced
+                && clientVersion < whenBloomFiltersWereDisabledByDefault)
+            return true;
+
+        return (localServices & NODE_BLOOM) == NODE_BLOOM;
+    }
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     // Backup

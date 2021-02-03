@@ -28,7 +28,7 @@ configure(subprojects) {
 
     ext { // in alphabetical order
         bcVersion = '1.63'
-        bitcoinjVersion = '2a80db4'
+        bitcoinjVersion = '0.15.8.bisq.14'
         btcdCli4jVersion = '27b94333'
         codecVersion = '1.13'
         easybindVersion = '1.0.3'
@@ -79,6 +79,7 @@ configure(subprojects) {
     repositories {
         mavenCentral()
         maven { url 'https://jitpack.io' }
+        mavenLocal()
     }
 
     dependencies {
@@ -212,7 +213,7 @@ configure(project(':proto')) {
 
 configure(project(':assets')) {
     dependencies {
-        compile("com.github.bisq-network:bitcoinj:$bitcoinjVersion") {
+        compile("org.bitcoinj:bitcoinj-core:$bitcoinjVersion") {
             exclude(module: 'jsr305')
             exclude(module: 'slf4j-api')
             exclude(module: 'guava')
@@ -245,7 +246,7 @@ configure(project(':common')) {
         compile("com.google.inject:guice:$guiceVersion") {
             exclude(module: 'guava')
         }
-        compile("com.github.bisq-network:bitcoinj:$bitcoinjVersion") {
+        compile("org.bitcoinj:bitcoinj-core:$bitcoinjVersion") {
             exclude(module: 'jsr305')
             exclude(module: 'slf4j-api')
             exclude(module: 'guava')
