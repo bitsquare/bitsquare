@@ -22,7 +22,7 @@ import bisq.desktop.main.market.trades.charts.CandleData;
 
 import bisq.core.locale.FiatCurrency;
 import bisq.core.monetary.Price;
-import bisq.core.offer.OfferPayload;
+import bisq.core.offer.FeeTxOfferPayload;
 import bisq.core.payment.payload.PaymentMethod;
 import bisq.core.provider.price.PriceFeedService;
 import bisq.core.trade.statistics.TradeStatistics3;
@@ -60,7 +60,7 @@ public class TradesChartsViewModelTest {
 
     DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     private File dir;
-    OfferPayload offer = new OfferPayload(null,
+    FeeTxOfferPayload offer = new FeeTxOfferPayload(null,
             0,
             null,
             null,

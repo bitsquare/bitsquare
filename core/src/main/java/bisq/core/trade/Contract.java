@@ -20,7 +20,7 @@ package bisq.core.trade;
 import bisq.core.locale.CurrencyUtil;
 import bisq.core.monetary.Price;
 import bisq.core.monetary.Volume;
-import bisq.core.offer.OfferPayload;
+import bisq.core.offer.FeeTxOfferPayload;
 import bisq.core.payment.payload.PaymentAccountPayload;
 import bisq.core.payment.payload.PaymentMethod;
 import bisq.core.proto.CoreProtoResolver;
@@ -49,7 +49,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 @Slf4j
 @Value
 public final class Contract implements NetworkPayload {
-    private final OfferPayload offerPayload;
+    private final FeeTxOfferPayload offerPayload;
     private final long tradeAmount;
     private final long tradePrice;
     private final String takerFeeTxID;
@@ -76,7 +76,7 @@ public final class Contract implements NetworkPayload {
     private long lockTime;
     private final NodeAddress refundAgentNodeAddress;
 
-    public Contract(OfferPayload offerPayload,
+    public Contract(FeeTxOfferPayload offerPayload,
                     long tradeAmount,
                     long tradePrice,
                     String takerFeeTxID,
@@ -134,7 +134,7 @@ public final class Contract implements NetworkPayload {
     ///////////////////////////////////////////////////////////////////////////////////////////
 
     public static Contract fromProto(protobuf.Contract proto, CoreProtoResolver coreProtoResolver) {
-        return new Contract(OfferPayload.fromProto(proto.getOfferPayload()),
+        return new Contract(FeeTxOfferPayload.fromProto(proto.getFeeTxOfferPayload()),
                 proto.getTradeAmount(),
                 proto.getTradePrice(),
                 proto.getTakerFeeTxId(),
@@ -159,7 +159,7 @@ public final class Contract implements NetworkPayload {
     @Override
     public protobuf.Contract toProtoMessage() {
         return protobuf.Contract.newBuilder()
-                .setOfferPayload(offerPayload.toProtoMessage().getOfferPayload())
+                .setFeeTxOfferPayload(offerPayload.toProtoMessage().getFeeTxOfferPayload())
                 .setTradeAmount(tradeAmount)
                 .setTradePrice(tradePrice)
                 .setTakerFeeTxId(takerFeeTxID)

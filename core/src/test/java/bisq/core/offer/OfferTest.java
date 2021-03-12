@@ -28,7 +28,7 @@ public class OfferTest {
 
     @Test
     public void testHasNoRange() {
-        OfferPayload payload = mock(OfferPayload.class);
+        FeeTxOfferPayload payload = mock(FeeTxOfferPayload.class);
         when(payload.getMinAmount()).thenReturn(1000L);
         when(payload.getAmount()).thenReturn(1000L);
 
@@ -38,7 +38,7 @@ public class OfferTest {
 
     @Test
     public void testHasRange() {
-        OfferPayload payload = mock(OfferPayload.class);
+        FeeTxOfferPayload payload = mock(FeeTxOfferPayload.class);
         when(payload.getMinAmount()).thenReturn(1000L);
         when(payload.getAmount()).thenReturn(2000L);
 

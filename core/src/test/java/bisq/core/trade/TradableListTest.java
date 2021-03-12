@@ -17,8 +17,8 @@
 
 package bisq.core.trade;
 
+import bisq.core.offer.FeeTxOfferPayload;
 import bisq.core.offer.Offer;
-import bisq.core.offer.OfferPayload;
 import bisq.core.offer.OpenOffer;
 
 import org.junit.Test;
@@ -32,7 +32,7 @@ public class TradableListTest {
 
     @Test
     public void protoTesting() {
-        OfferPayload offerPayload = mock(OfferPayload.class, RETURNS_DEEP_STUBS);
+        FeeTxOfferPayload offerPayload = mock(FeeTxOfferPayload.class, RETURNS_DEEP_STUBS);
         TradableList<OpenOffer> openOfferTradableList = new TradableList<>();
         protobuf.PersistableEnvelope message = (protobuf.PersistableEnvelope) openOfferTradableList.toProtoMessage();
         assertEquals(message.getMessageCase(), TRADABLE_LIST);

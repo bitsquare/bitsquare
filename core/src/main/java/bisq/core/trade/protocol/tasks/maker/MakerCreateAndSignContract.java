@@ -19,6 +19,7 @@ package bisq.core.trade.protocol.tasks.maker;
 
 import bisq.core.btc.model.AddressEntry;
 import bisq.core.btc.wallet.BtcWalletService;
+import bisq.core.offer.FeeTxOfferPayload;
 import bisq.core.trade.BuyerAsMakerTrade;
 import bisq.core.trade.Contract;
 import bisq.core.trade.Trade;
@@ -34,6 +35,7 @@ import bisq.common.util.Utilities;
 
 import lombok.extern.slf4j.Slf4j;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Slf4j
@@ -61,8 +63,12 @@ public class MakerCreateAndSignContract extends TradeTask {
             byte[] makerMultiSigPubKey = makerAddressEntry.getPubKey();
 
             AddressEntry takerAddressEntry = walletService.getOrCreateAddressEntry(id, AddressEntry.Context.TRADE_PAYOUT);
+
+            checkArgument(processModel.getOffer().getOfferPayload() instanceof FeeTxOfferPayload);
+            FeeTxOfferPayload offerPayload = (FeeTxOfferPayload) processModel.getOffer().getOfferPayload();
+
             Contract contract = new Contract(
-                    processModel.getOffer().getOfferPayload(),
+                    offerPayload,
                     checkNotNull(trade.getTradeAmount()).value,
                     trade.getTradePrice().getValue(),
                     takerFeeTxId,

@@ -26,7 +26,7 @@ import bisq.core.locale.CurrencyUtil;
 import bisq.core.locale.Res;
 import bisq.core.monetary.Altcoin;
 import bisq.core.monetary.Price;
-import bisq.core.offer.OfferPayload;
+import bisq.core.offer.FeeTxOfferPayload;
 import bisq.core.offer.OpenOfferManager;
 import bisq.core.provider.price.MarketPrice;
 import bisq.core.provider.price.PriceFeedService;
@@ -863,7 +863,7 @@ public abstract class DisputeManager<T extends DisputeList<Dispute>> extends Sup
         }
 
         Contract contract = dispute.getContract();
-        OfferPayload offerPayload = contract.getOfferPayload();
+        FeeTxOfferPayload offerPayload = contract.getOfferPayload();
         Price priceAtDisputeOpening = getPrice(offerPayload.getCurrencyCode());
         if (priceAtDisputeOpening == null) {
             log.info("Price provider did not provide a price for {}. " +

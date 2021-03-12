@@ -2,10 +2,10 @@ package bisq.desktop.util;
 
 import bisq.core.locale.Res;
 import bisq.core.monetary.Volume;
+import bisq.core.offer.FeeTxOfferPayload;
 import bisq.core.offer.Offer;
-import bisq.core.offer.OfferPayload;
-import bisq.core.util.coin.ImmutableCoinFormatter;
 import bisq.core.util.coin.CoinFormatter;
+import bisq.core.util.coin.ImmutableCoinFormatter;
 
 import bisq.common.config.Config;
 
@@ -96,7 +96,7 @@ public class DisplayUtilsTest {
 
     @Test
     public void testFormatDifferentAmount() {
-        OfferPayload offerPayload = mock(OfferPayload.class);
+        FeeTxOfferPayload offerPayload = mock(FeeTxOfferPayload.class);
         Offer offer = new Offer(offerPayload);
         when(offerPayload.getMinAmount()).thenReturn(10000000L);
         when(offerPayload.getAmount()).thenReturn(20000000L);
@@ -106,7 +106,7 @@ public class DisplayUtilsTest {
 
     @Test
     public void testFormatAmountWithAlignmenWithDecimals() {
-        OfferPayload offerPayload = mock(OfferPayload.class);
+        FeeTxOfferPayload offerPayload = mock(FeeTxOfferPayload.class);
         Offer offer = new Offer(offerPayload);
         when(offerPayload.getMinAmount()).thenReturn(10000000L);
         when(offerPayload.getAmount()).thenReturn(20000000L);
@@ -116,7 +116,7 @@ public class DisplayUtilsTest {
 
     @Test
     public void testFormatAmountWithAlignmenWithDecimalsNoRange() {
-        OfferPayload offerPayload = mock(OfferPayload.class);
+        FeeTxOfferPayload offerPayload = mock(FeeTxOfferPayload.class);
         Offer offer = new Offer(offerPayload);
         when(offerPayload.getMinAmount()).thenReturn(10000000L);
         when(offerPayload.getAmount()).thenReturn(10000000L);

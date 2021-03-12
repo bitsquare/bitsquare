@@ -36,7 +36,7 @@ public class OfferMaker {
     public static final Property<Offer, String> id = new Property<>();
 
     public static final Instantiator<Offer> Offer = lookup -> new Offer(
-            new OfferPayload(lookup.valueOf(id, "1234"),
+            new FeeTxOfferPayload(lookup.valueOf(id, "1234"),
                     0L,
                     null,
                     null,

@@ -766,13 +766,20 @@ public class OpenOfferManager implements PeerManager.Listener, DecryptedDirectMe
     // Update persisted offer if a new capability is required after a software update
     ///////////////////////////////////////////////////////////////////////////////////////////
 
+    // This kind of update make sense for offers with an attached maker fee tx
+    // For offers without a maker fee it makes more sense to delete the old offer and create new ones with current
+    // capabilities
     private void maybeUpdatePersistedOffers() {
         // We need to clone to avoid ConcurrentModificationException
         ArrayList<OpenOffer> openOffersClone = new ArrayList<>(openOffers.getList());
         openOffersClone.forEach(originalOpenOffer -> {
             Offer originalOffer = originalOpenOffer.getOffer();
 
-            OfferPayload originalOfferPayload = originalOffer.getOfferPayload();
+            // Only FeeTxOfferPayload type offers have a maker fee tx attached, don't update any other kind
+            if (!(originalOffer.getOfferPayload() instanceof FeeTxOfferPayload)) {
+                return;
+            }
+            FeeTxOfferPayload originalOfferPayload = (FeeTxOfferPayload) originalOffer.getOfferPayload();
             // We added CAPABILITIES with entry for Capability.MEDIATION in v1.1.6 and
             // Capability.REFUND_AGENT in v1.2.0 and want to rewrite a
             // persisted offer after the user has updated to 1.2.0 so their offer will be accepted by the network.
@@ -816,7 +823,7 @@ public class OpenOfferManager implements PeerManager.Listener, DecryptedDirectMe
                     log.info("Updated the owner nodeaddress of offer id={}", originalOffer.getId());
                 }
 
-                OfferPayload updatedPayload = new OfferPayload(originalOfferPayload.getId(),
+                FeeTxOfferPayload updatedPayload = new FeeTxOfferPayload(originalOfferPayload.getId(),
                         originalOfferPayload.getDate(),
                         ownerNodeAddress,
                         originalOfferPayload.getPubKeyRing(),

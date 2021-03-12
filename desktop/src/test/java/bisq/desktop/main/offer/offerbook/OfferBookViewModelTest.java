@@ -24,8 +24,8 @@ import bisq.core.locale.CryptoCurrency;
 import bisq.core.locale.FiatCurrency;
 import bisq.core.locale.GlobalSettings;
 import bisq.core.locale.Res;
+import bisq.core.offer.FeeTxOfferPayload;
 import bisq.core.offer.Offer;
-import bisq.core.offer.OfferPayload;
 import bisq.core.offer.OpenOfferManager;
 import bisq.core.payment.AliPayAccount;
 import bisq.core.payment.CountryBasedPaymentAccount;
@@ -584,7 +584,7 @@ public class OfferBookViewModelTest {
                            ArrayList<String> acceptedCountryCodes,
                            String bankId,
                            ArrayList<String> acceptedBanks) {
-        return new Offer(new OfferPayload(null,
+        return new Offer(new FeeTxOfferPayload(null,
                 0,
                 null,
                 null,

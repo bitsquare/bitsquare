@@ -529,7 +529,7 @@ message StoragePayload {
         // TradeStatistics trade_statistics = 5 [deprecated = true]; Removed in v.1.4.0
 
         MailboxStoragePayload mailbox_storage_payload = 6;
-        OfferPayload offer_payload = 7;
+        FeeTxOfferPayload fee_tx_offer_payload = 7;
         TempProposalPayload temp_proposal_payload = 8;
         RefundAgent refund_agent = 9;
     }
@@ -695,7 +695,7 @@ message Filter {
 message TradeStatistics2 {
     string base_currency = 1 [deprecated = true];
     string counter_currency = 2 [deprecated = true];
-    OfferPayload.Direction direction = 3 [deprecated = true];
+    FeeTxOfferPayload.Direction direction = 3 [deprecated = true];
     int64 trade_price = 4 [deprecated = true];
     int64 trade_amount = 5 [deprecated = true];
     int64 trade_date = 6 [deprecated = true];
@@ -730,7 +730,7 @@ message MailboxStoragePayload {
     map<string, string> extra_data = 4;
 }
 
-message OfferPayload {
+message FeeTxOfferPayload {
     enum Direction {
         PB_ERROR = 0;
         BUY = 1;
@@ -883,7 +883,7 @@ message DisputeResult {
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 message Contract {
-    OfferPayload offer_payload = 1;
+    FeeTxOfferPayload fee_tx_offer_payload = 1;
     int64 trade_amount = 2;
     int64 trade_price = 3;
     string taker_fee_tx_id = 4;
@@ -1337,7 +1337,7 @@ message Offer {
         MAKER_OFFLINE = 6;
     }
 
-    OfferPayload offer_payload = 1;
+    FeeTxOfferPayload fee_tx_offer_payload = 1;
 }
 
 message OpenOffer {

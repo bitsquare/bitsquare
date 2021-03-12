@@ -58,7 +58,7 @@ public class OpenOfferManagerTest {
         doAnswer(invocation -> {
             ((ResultHandler) invocation.getArgument(1)).handleResult();
             return null;
-        }).when(offerBookService).deactivateOffer(any(OfferPayload.class), any(ResultHandler.class), any(ErrorMessageHandler.class));
+        }).when(offerBookService).deactivateOffer(any(FeeTxOfferPayload.class), any(ResultHandler.class), any(ErrorMessageHandler.class));
 
         final OpenOffer openOffer = new OpenOffer(make(btcUsdOffer));
 
@@ -66,7 +66,7 @@ public class OpenOfferManagerTest {
 
         manager.editOpenOfferStart(openOffer, resultHandler, null);
 
-        verify(offerBookService, times(1)).deactivateOffer(any(OfferPayload.class), any(ResultHandler.class), any(ErrorMessageHandler.class));
+        verify(offerBookService, times(1)).deactivateOffer(any(FeeTxOfferPayload.class), any(ResultHandler.class), any(ErrorMessageHandler.class));
 
         assertTrue(startEditOfferSuccessful.get());
 

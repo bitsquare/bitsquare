@@ -21,7 +21,7 @@ import bisq.core.account.sign.SignedWitness;
 import bisq.core.account.sign.SignedWitnessService;
 import bisq.core.filter.FilterManager;
 import bisq.core.locale.CountryUtil;
-import bisq.core.offer.OfferPayload;
+import bisq.core.offer.FeeTxOfferPayload;
 import bisq.core.payment.ChargeBackRisk;
 import bisq.core.payment.payload.PaymentAccountPayload;
 import bisq.core.payment.payload.PaymentMethod;
@@ -229,7 +229,7 @@ public class AccountAgeWitnessServiceTest {
         when(contract.getSellerPubKeyRing()).thenReturn(sellerPubKeyRing);
         when(contract.getBuyerPaymentAccountPayload()).thenReturn(buyerPaymentAccountPayload);
         when(contract.getSellerPaymentAccountPayload()).thenReturn(sellerPaymentAccountPayload);
-        when(contract.getOfferPayload()).thenReturn(mock(OfferPayload.class));
+        when(contract.getOfferPayload()).thenReturn(mock(FeeTxOfferPayload.class));
         List<TraderDataItem> items = service.getTraderPaymentAccounts(now, getPaymentMethodById(PaymentMethod.SEPA_ID), disputes);
         assertEquals(2, items.size());
 

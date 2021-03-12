@@ -28,6 +28,7 @@ import bisq.core.btc.wallet.Restrictions;
 import bisq.core.locale.CurrencyUtil;
 import bisq.core.locale.TradeCurrency;
 import bisq.core.offer.CreateOfferService;
+import bisq.core.offer.FeeTxOfferPayload;
 import bisq.core.offer.Offer;
 import bisq.core.offer.OfferPayload;
 import bisq.core.offer.OfferUtil;
@@ -185,9 +186,12 @@ class EditOfferDataModel extends MutableOfferDataModel {
         // editedPayload is a merge of the original offerPayload and newOfferPayload
         // fields which are editable are merged in from newOfferPayload (such as payment account details)
         // fields which cannot change (most importantly BTC amount) are sourced from the original offerPayload
-        final OfferPayload offerPayload = openOffer.getOffer().getOfferPayload();
-        final OfferPayload newOfferPayload = createAndGetOffer().getOfferPayload();
-        final OfferPayload editedPayload = new OfferPayload(offerPayload.getId(),
+        if (!(openOffer.getOffer().getOfferPayload() instanceof FeeTxOfferPayload)) {
+            return;
+        }
+        final FeeTxOfferPayload offerPayload = (FeeTxOfferPayload) openOffer.getOffer().getOfferPayload();
+        final FeeTxOfferPayload newOfferPayload = (FeeTxOfferPayload) createAndGetOffer().getOfferPayload();
+        final FeeTxOfferPayload editedPayload = new FeeTxOfferPayload(offerPayload.getId(),
                 offerPayload.getDate(),
                 offerPayload.getOwnerNodeAddress(),
                 offerPayload.getPubKeyRing(),
