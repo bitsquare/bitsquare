@@ -52,7 +52,7 @@ public class OfferViewUtil {
         String buyBsqText = Res.get("shared.buyCurrency", "BSQ");
         var buyBsqButton = new AutoTooltipButton(buyBsqText);
         buyBsqButton.getStyleClass().add("action-button");
-        buyBsqButton.setStyle("-fx-pref-height: 20; -fx-padding: 3 8 3 8; -fx-font-size: 0.769em; -fx-border-radius: 5;");
+        buyBsqButton.getStyleClass().add("tiny-button");
         buyBsqButton.setOnAction(e -> new Popup().headLine(buyBsqText)
                 .information(Res.get("createOffer.buyBsq.popupMessage"))
                 .actionButtonText(buyBsqText)
