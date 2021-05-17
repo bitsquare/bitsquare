@@ -24,6 +24,7 @@ import bisq.desktop.main.offer.offerbook.OfferBookView;
 import bisq.desktop.main.overlays.popups.Popup;
 
 import bisq.core.locale.Res;
+import bisq.core.offer.OfferPayload;
 import bisq.core.user.Preferences;
 
 import bisq.common.util.Tuple2;
@@ -35,9 +36,12 @@ import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Reusable methods for CreateOfferView, TakeOfferView or other related views
  */
+@Slf4j
 public class OfferViewUtil {
     public static Label createPopOverLabel(String text) {
         final Label label = new Label(text);
@@ -48,7 +52,13 @@ public class OfferViewUtil {
         return label;
     }
 
-    public static Tuple2<AutoTooltipButton, VBox> createBuyBsqButtonBox(Navigation navigation, Preferences preferences) {
+    public interface DirectionClosure {
+        OfferPayload.Direction getDirection();
+    }
+
+    public static Tuple2<AutoTooltipButton, VBox> createBuyBsqButtonBox(Navigation navigation,
+                                                                        Preferences preferences,
+                                                                        DirectionClosure directionClosure) {
         String buyBsqText = Res.get("shared.buyCurrency", "BSQ");
         var buyBsqButton = new AutoTooltipButton(buyBsqText);
         buyBsqButton.getStyleClass().add("action-button");
@@ -59,7 +69,10 @@ public class OfferViewUtil {
                 .buttonAlignment(HPos.CENTER)
                 .onAction(() -> {
                     preferences.setSellScreenCurrencyCode("BSQ");
-                    navigation.navigateTo(MainView.class, SellOfferView.class, OfferBookView.class);
+                    navigation.navigateToWithData(
+                            // FIXME: replace "closeOfferView" with a more unique object?
+                            directionClosure.getDirection() == OfferPayload.Direction.SELL ? "closeOfferView" : null,
+                            MainView.class, SellOfferView.class, OfferBookView.class);
                 }).show());
 
         final VBox buyBsqButtonVBox = new VBox(buyBsqButton);
