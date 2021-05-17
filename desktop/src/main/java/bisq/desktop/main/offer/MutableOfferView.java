@@ -858,7 +858,9 @@ public abstract class MutableOfferView<M extends MutableOfferViewModel<?>> exten
             if (DevEnv.isDaoActivated()) {
                 tradeFeeInBtcToggle.setVisible(newValue);
                 tradeFeeInBsqToggle.setVisible(newValue);
-                buyBsqButton.setVisible(newValue);
+                if (!(newValue && model.dataModel.isBsqForFeeAvailable())) {
+                    buyBsqButton.setVisible(newValue);
+                }
             }
         };
 
