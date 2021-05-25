@@ -9,7 +9,6 @@ buildscript {
         classpath 'com.google.gradle:osdetector-gradle-plugin:1.6.0'
         classpath 'com.github.jengelman.gradle.plugins:shadow:5.2.0'
         classpath 'org.openjfx:javafx-plugin:0.0.10'
-        classpath files('gradle/witness/gradle-witness.jar')
         classpath 'org.springframework.boot:spring-boot-gradle-plugin:1.5.10.RELEASE'
     }
 }
@@ -403,8 +402,6 @@ configure(project(':cli')) {
 configure(project(':desktop')) {
     apply plugin: 'com.github.johnrengelman.shadow'
     apply plugin: 'org.openjfx.javafxplugin'
-    apply plugin: 'witness'
-    apply from: '../gradle/witness/gradle-witness.gradle'
     apply from: 'package/package.gradle'
 
     javafx {

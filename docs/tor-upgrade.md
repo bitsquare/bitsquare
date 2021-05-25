@@ -101,8 +101,7 @@ git push origin 0.7.0
 Create a Bisq PR with the following changes:
 
  - In `bisq/build.gradle` update `netlayerVersion` to the `netlayer` commit ID from above
- - Update the gradle dependency checksums
-   - See instructions in `bisq/gradle/witness/gradle-witness.gradle`
+ - Update the gradle dependency checksums in `bisq/gradle/verification-metadata.xml`
 
 
 
