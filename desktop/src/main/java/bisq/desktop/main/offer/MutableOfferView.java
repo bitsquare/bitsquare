@@ -132,7 +132,7 @@ public abstract class MutableOfferView<M extends MutableOfferViewModel<?>> exten
     private TitledGroupBg payFundsTitledGroupBg, setDepositTitledGroupBg, paymentTitledGroupBg;
     protected TitledGroupBg amountTitledGroupBg;
     private BusyAnimation waitingForFundsSpinner;
-    private AutoTooltipButton nextButton, cancelButton1, cancelButton2, placeOfferButton;
+    private AutoTooltipButton nextButton, cancelButton1, cancelButton2, placeOfferButton, buyBsqButton;
     private Button priceTypeToggleButton;
     private InputTextField fixedPriceTextField, marketBasedPriceTextField, triggerPriceInputTextField;
     protected InputTextField amountTextField, minAmountTextField, volumeTextField, buyerSecurityDepositInputTextField;
@@ -163,6 +163,7 @@ public abstract class MutableOfferView<M extends MutableOfferViewModel<?>> exten
     private ChangeListener<String> tradeCurrencyCodeListener, errorMessageListener,
             marketPriceMarginListener, volumeListener, buyerSecurityDepositInBTCListener;
     private ChangeListener<Number> marketPriceAvailableListener;
+    private Navigation.Listener navigationWithCloseListener;
     private EventHandler<ActionEvent> currencyComboBoxSelectionHandler, paymentAccountsComboBoxSelectionHandler;
     private OfferView.CloseHandler closeHandler;
 
@@ -261,6 +262,8 @@ public abstract class MutableOfferView<M extends MutableOfferViewModel<?>> exten
                 tradeFeeInBtcToggle.setManaged(false);
                 tradeFeeInBsqToggle.setVisible(false);
                 tradeFeeInBsqToggle.setManaged(false);
+                buyBsqButton.setVisible(false);
+                buyBsqButton.setManaged(false);
             }
 
             Label popOverLabel = OfferViewUtil.createPopOverLabel(Res.get("createOffer.triggerPrice.tooltip"));
@@ -323,7 +326,7 @@ public abstract class MutableOfferView<M extends MutableOfferViewModel<?>> exten
             showInsufficientBsqFundsForBtcFeePaymentPopup();
     }
 
-    // called form parent as the view does not get notified when the tab is closed
+    // called from parent as the view does not get notified when the tab is closed
     public void onClose() {
         // we use model.placeOfferCompleted to not react on close which was triggered by a successful placeOffer
         if (model.getDataModel().getBalance().get().isPositive() && !model.placeOfferCompleted.get()) {
@@ -384,6 +387,9 @@ public abstract class MutableOfferView<M extends MutableOfferViewModel<?>> exten
         cancelButton1.setVisible(false);
         cancelButton1.setManaged(false);
         cancelButton1.setOnAction(null);
+        buyBsqButton.setVisible(false);
+        buyBsqButton.setManaged(false);
+        buyBsqButton.setOnAction(null);
 
         tradeFeeInBtcToggle.setMouseTransparent(true);
         tradeFeeInBsqToggle.setMouseTransparent(true);
@@ -853,6 +859,9 @@ public abstract class MutableOfferView<M extends MutableOfferViewModel<?>> exten
             if (DevEnv.isDaoActivated()) {
                 tradeFeeInBtcToggle.setVisible(newValue);
                 tradeFeeInBsqToggle.setVisible(newValue);
+                if (!(newValue && model.dataModel.isBsqForFeeAvailable())) {
+                    buyBsqButton.setVisible(newValue);
+                }
             }
         };
 
@@ -867,6 +876,14 @@ public abstract class MutableOfferView<M extends MutableOfferViewModel<?>> exten
                 buyerSecurityDepositInputTextField.setDisable(false);
             }
         });
+
+        navigationWithCloseListener = (path, data) -> {
+            log.warn("*** target path={}, data={}, dir={}", path, data, model.getDataModel().getDirection());
+            if ("closeOfferView".equals(data)) {
+                log.warn("*** WILL CLOSE");
+                close();
+            }
+        };
     }
 
     private void setIsCurrencyForMakerFeeBtc(boolean isCurrencyForMakerFeeBtc) {
@@ -923,6 +940,8 @@ public abstract class MutableOfferView<M extends MutableOfferViewModel<?>> exten
         // UI actions
         paymentAccountsComboBox.setOnAction(paymentAccountsComboBoxSelectionHandler);
         currencyComboBox.setOnAction(currencyComboBoxSelectionHandler);
+
+        navigation.addListener(navigationWithCloseListener);
     }
 
     private void removeListeners() {
@@ -958,6 +977,8 @@ public abstract class MutableOfferView<M extends MutableOfferViewModel<?>> exten
         // UI actions
         paymentAccountsComboBox.setOnAction(null);
         currencyComboBox.setOnAction(null);
+
+        navigation.removeListener(navigationWithCloseListener);
     }
 
 
@@ -1069,7 +1090,12 @@ public abstract class MutableOfferView<M extends MutableOfferViewModel<?>> exten
         GridPane.setMargin(advancedOptionsBox, new Insets(Layout.COMPACT_FIRST_ROW_AND_GROUP_DISTANCE, 0, 0, 0));
         gridPane.getChildren().add(advancedOptionsBox);
 
-        advancedOptionsBox.getChildren().addAll(getBuyerSecurityDepositBox(), getTradeFeeFieldsBox());
+        Tuple2<AutoTooltipButton, VBox> buyBsqButtonBox = OfferViewUtil.createBuyBsqButtonBox(
+                navigation, preferences, model.dataModel::getDirection);
+        buyBsqButton = buyBsqButtonBox.first;
+        buyBsqButton.setVisible(false);
+
+        advancedOptionsBox.getChildren().addAll(getBuyerSecurityDepositBox(), getTradeFeeFieldsBox(), buyBsqButtonBox.second);
 
         Tuple2<Button, Button> tuple = add2ButtonsAfterGroup(gridPane, ++gridRow,
                 Res.get("shared.nextStep"), Res.get("shared.cancel"));
