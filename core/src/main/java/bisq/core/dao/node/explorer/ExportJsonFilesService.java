@@ -55,6 +55,11 @@ import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Writes chain height, blocks, txs and txOutputs as json to disk.
+ * Only writes new blocks and txs/txOutputs from new blocks.
+ * On reorg we delete all blocks, txs and txos from above the chain height of the last persisted snapshot.
+ */
 @Slf4j
 public class ExportJsonFilesService implements DaoSetupService {
     private final DaoStateService daoStateService;
@@ -63,7 +68,8 @@ public class ExportJsonFilesService implements DaoSetupService {
 
     private final ListeningExecutorService executor = Utilities.getListeningExecutorService("JsonExporter",
             1, 1, 1200);
-    private JsonFileManager txFileManager, txOutputFileManager, bsqStateFileManager;
+    private JsonFileManager txFileManager, txOutputFileManager, blocksFileManager, chainHeightFileManager;
+    private File jsonDir;
 
     @Inject
     public ExportJsonFilesService(DaoStateService daoStateService,
@@ -86,23 +92,10 @@ public class ExportJsonFilesService implements DaoSetupService {
     @Override
     public void start() {
         if (dumpBlockchainData) {
-            File jsonDir = new File(Paths.get(storageDir.getAbsolutePath(), "json").toString());
+            jsonDir = new File(Paths.get(storageDir.getAbsolutePath(), "json").toString());
             File txDir = new File(Paths.get(storageDir.getAbsolutePath(), "json", "tx").toString());
             File txOutputDir = new File(Paths.get(storageDir.getAbsolutePath(), "json", "txo").toString());
-            File bsqStateDir = new File(Paths.get(storageDir.getAbsolutePath(), "json", "all").toString());
-            try {
-                if (txDir.exists())
-                    FileUtil.deleteDirectory(txDir);
-                if (txOutputDir.exists())
-                    FileUtil.deleteDirectory(txOutputDir);
-                if (bsqStateDir.exists())
-                    FileUtil.deleteDirectory(bsqStateDir);
-                if (jsonDir.exists())
-                    FileUtil.deleteDirectory(jsonDir);
-            } catch (IOException e) {
-                log.error(e.toString());
-                e.printStackTrace();
-            }
+            File blocksDir = new File(Paths.get(storageDir.getAbsolutePath(), "json", "block").toString());
 
             if (!jsonDir.mkdir())
                 log.warn("make jsonDir failed.\njsonDir=" + jsonDir.getAbsolutePath());
@@ -113,12 +106,13 @@ public class ExportJsonFilesService implements DaoSetupService {
             if (!txOutputDir.mkdir())
                 log.warn("make txOutputDir failed.\ntxOutputDir=" + txOutputDir.getAbsolutePath());
 
-            if (!bsqStateDir.mkdir())
-                log.warn("make bsqStateDir failed.\nbsqStateDir=" + bsqStateDir.getAbsolutePath());
+            if (!blocksDir.mkdir())
+                log.warn("make blocksDir failed.\nblocksDir=" + blocksDir.getAbsolutePath());
 
             txFileManager = new JsonFileManager(txDir);
             txOutputFileManager = new JsonFileManager(txOutputDir);
-            bsqStateFileManager = new JsonFileManager(bsqStateDir);
+            blocksFileManager = new JsonFileManager(blocksDir);
+            chainHeightFileManager = new JsonFileManager(blocksDir);
         }
     }
 
@@ -126,42 +120,105 @@ public class ExportJsonFilesService implements DaoSetupService {
         if (dumpBlockchainData && txFileManager != null) {
             txFileManager.shutDown();
             txOutputFileManager.shutDown();
-            bsqStateFileManager.shutDown();
+            blocksFileManager.shutDown();
+            chainHeightFileManager.shutDown();
         }
     }
 
-    public void maybeExportToJson() {
-        if (dumpBlockchainData &&
-                daoStateService.isParseBlockChainComplete()) {
-            // We store the data we need once we write the data to disk (in the thread) locally.
-            // Access to daoStateService is single threaded, we must not access daoStateService from the thread.
-            List<JsonTxOutput> allJsonTxOutputs = new ArrayList<>();
-
-            List<JsonTx> jsonTxs = daoStateService.getUnorderedTxStream()
-                    .map(tx -> {
-                        JsonTx jsonTx = getJsonTx(tx);
-                        allJsonTxOutputs.addAll(jsonTx.getOutputs());
-                        return jsonTx;
-                    }).collect(Collectors.toList());
-
-            DaoState daoState = daoStateService.getClone();
-            List<JsonBlock> jsonBlockList = daoState.getBlocks().stream()
-                    .map(this::getJsonBlock)
-                    .collect(Collectors.toList());
-            JsonBlocks jsonBlocks = new JsonBlocks(daoState.getChainHeight(), jsonBlockList);
-
-            ListenableFuture<Void> future = executor.submit(() -> {
-                bsqStateFileManager.writeToDisc(Utilities.objectToJson(jsonBlocks), "blocks");
-                allJsonTxOutputs.forEach(jsonTxOutput -> txOutputFileManager.writeToDisc(Utilities.objectToJson(jsonTxOutput), jsonTxOutput.getId()));
-                jsonTxs.forEach(jsonTx -> txFileManager.writeToDisc(Utilities.objectToJson(jsonTx), jsonTx.getId()));
-                return null;
-            });
-
-            Futures.addCallback(future, Utilities.failureCallback(throwable -> {
-                log.error(throwable.toString());
-                throwable.printStackTrace();
-            }), MoreExecutors.directExecutor());
+    public void onNewBlock(Block block) {
+        if (!dumpBlockchainData || !daoStateService.isParseBlockChainComplete()) {
+            return;
         }
+        process(List.of(block), daoStateService.getClone());
+    }
+
+    public void onParseBlockChainComplete() {
+        if (!dumpBlockchainData || !daoStateService.isParseBlockChainComplete()) {
+            return;
+        }
+
+        Optional<String> optionalHeight = chainHeightFileManager.read("chainHeight");
+        DaoState daoState = daoStateService.getClone();
+        List<Block> blocks;
+        if (optionalHeight.isPresent()) {
+            int height = Integer.parseInt(optionalHeight.get());
+            blocks = daoState.getBlocks().stream()
+                    .filter(block -> block.getHeight() > height)
+                    .collect(Collectors.toList());
+        } else {
+            blocks = daoState.getBlocks();
+        }
+
+        if (!blocks.isEmpty()) {
+            process(blocks, daoState);
+        }
+    }
+
+    public void onReOrg(Optional<Integer> chainHeightOfPersistedState) {
+        if (!dumpBlockchainData || !daoStateService.isParseBlockChainComplete()) {
+            return;
+        }
+
+        if (chainHeightOfPersistedState.isPresent()) {
+            // We will restore the dao state from that chain height from the snapshots.
+            // We delete all json files from the blocks above that height.
+            int chainHeight = chainHeightOfPersistedState.get();
+            DaoState daoState = daoStateService.getClone();
+            List<Block> blocks = daoState.getBlocks().stream()
+                    .filter(block -> block.getHeight() > chainHeight)
+                    .collect(Collectors.toList());
+
+            List<TxOutput> txOutputs = new ArrayList<>();
+            List<Tx> txs = blocks.stream()
+                    .flatMap(block -> block.getTxs().stream())
+                    .peek(tx -> txOutputs.addAll(tx.getTxOutputs()))
+                    .collect(Collectors.toList());
+
+            chainHeightFileManager.write(String.valueOf(chainHeight), "chainHeight");
+            blocks.forEach(block -> blocksFileManager.delete(block.getHeight() + "_" + block.getHash()));
+            txs.forEach(tx -> txFileManager.delete(tx.getId()));
+            txOutputs.forEach(txo -> txOutputFileManager.delete(txo.getKey().toString()));
+        } else {
+            try {
+                if (jsonDir.exists()) {
+                    FileUtil.deleteDirectory(jsonDir);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void process(List<Block> blocks, DaoState daoState) {
+        int chainHeight = daoState.getChainHeight();
+        List<JsonBlock> jsonBlockList = blocks.stream()
+                .map(this::getJsonBlock)
+                .collect(Collectors.toList());
+
+        List<JsonTxOutput> jsonTxOutputs = new ArrayList<>();
+        List<JsonTx> jsonTxs = blocks.stream()
+                .flatMap(block -> block.getTxs().stream())
+                .map(tx -> {
+                    JsonTx jsonTx = getJsonTx(tx);
+                    jsonTxOutputs.addAll(jsonTx.getOutputs());
+                    return jsonTx;
+                })
+                .collect(Collectors.toList());
+
+        ListenableFuture<Void> future = executor.submit(() -> {
+            log.info("Write chainHeight={}, jsonBlockList={}, jsonTxs={}, jsonTxOutputs={}",
+                    chainHeight, jsonBlockList.size(), jsonTxs.size(), jsonTxOutputs.size());
+            chainHeightFileManager.write(String.valueOf(chainHeight), "chainHeight");
+            jsonBlockList.forEach(jsonBlock -> blocksFileManager.write(Utilities.objectToJson(jsonBlock), jsonBlock.getHeight() + "_" + jsonBlock.getHash()));
+            jsonTxs.forEach(jsonTx -> txFileManager.write(Utilities.objectToJson(jsonTx), jsonTx.getId()));
+            jsonTxOutputs.forEach(jsonTxOutput -> txOutputFileManager.write(Utilities.objectToJson(jsonTxOutput), jsonTxOutput.getId()));
+            return null;
+        });
+
+        Futures.addCallback(future, Utilities.failureCallback(throwable -> {
+            log.error(throwable.toString());
+            throwable.printStackTrace();
+        }), MoreExecutors.directExecutor());
     }
 
     private JsonBlock getJsonBlock(Block block) {

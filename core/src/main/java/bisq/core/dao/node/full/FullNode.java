@@ -169,12 +169,12 @@ public class FullNode extends BsqNode {
     }
 
     private void onNewBlock(Block block) {
-        maybeExportToJson();
+        exportJsonFilesService.onNewBlock(block);
 
-        if (p2pNetworkReady && parseBlockchainComplete)
+        if (p2pNetworkReady && parseBlockchainComplete) {
             fullNodeNetworkService.publishNewBlock(block);
+        }
     }
-
 
     private void parseBlocksIfNewBlockAvailable(int chainHeight) {
         rpcService.requestChainHeadHeight(newChainHeight -> {

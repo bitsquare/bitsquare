@@ -232,7 +232,7 @@ public class BotScriptGenerator {
         String json = generator.generateBotScriptTemplate();
         String destDir = getProperty("java.io.tmpdir");
         JsonFileManager jsonFileManager = new JsonFileManager(new File(destDir));
-        jsonFileManager.writeToDisc(json, "bot-script");
+        jsonFileManager.write(json, "bot-script");
         JsonFileManager.shutDownAllInstances();
         log.info("Saved {}/bot-script.json", destDir);
         log.info("bot-script.json contents\n{}", json);

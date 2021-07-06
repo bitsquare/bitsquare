@@ -242,7 +242,7 @@ public class InventoryMonitor implements SetupListener {
         inventoryWebServer.onNewRequestInfo(requestInfoListByNode, requestCounter);
 
         String json = Utilities.objectToJson(requestInfo);
-        jsonFileManagerByNodeAddress.get(nodeAddress).writeToDisc(json, String.valueOf(requestInfo.getRequestStartTime()));
+        jsonFileManagerByNodeAddress.get(nodeAddress).write(json, String.valueOf(requestInfo.getRequestStartTime()));
     }
 
     private void addJsonFileManagers(List<NodeAddress> seedNodes) {

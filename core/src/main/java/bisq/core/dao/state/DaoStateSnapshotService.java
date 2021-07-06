@@ -34,6 +34,7 @@ import java.io.File;
 import java.io.IOException;
 
 import java.util.LinkedList;
+import java.util.Optional;
 
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -120,6 +121,11 @@ public class DaoStateSnapshotService {
 
             log.debug("Cloned new snapshotCandidate at height {} took {} ms", chainHeight, System.currentTimeMillis() - ts);
         }
+    }
+
+    public Optional<Integer> getChainHeightOfPersistedState() {
+        DaoState state = daoStateStorageService.getPersistedBsqState();
+        return state != null ? Optional.of(state.getChainHeight()) : Optional.empty();
     }
 
     public void applySnapshot(boolean fromReorg) {

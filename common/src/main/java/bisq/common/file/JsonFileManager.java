@@ -22,10 +22,13 @@ import bisq.common.util.Utilities;
 import java.nio.file.Paths;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Scanner;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import lombok.extern.slf4j.Slf4j;
@@ -76,10 +79,26 @@ public class JsonFileManager {
     }
 
     public void writeToDiscThreaded(String json, String fileName) {
-        getExecutor().execute(() -> writeToDisc(json, fileName));
+        getExecutor().execute(() -> write(json, fileName));
     }
 
-    public void writeToDisc(String json, String fileName) {
+    public Optional<String> read(String fileName) {
+        File jsonFile = new File(Paths.get(dir.getAbsolutePath(), fileName + ".json").toString());
+        if (!jsonFile.exists()) {
+            return Optional.empty();
+        }
+        StringBuilder json = new StringBuilder();
+        try (Scanner scanner = new Scanner(jsonFile)) {
+            while (scanner.hasNext()) {
+                json.append(scanner.next());
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return Optional.of(json.toString());
+    }
+
+    public void write(String json, String fileName) {
         File jsonFile = new File(Paths.get(dir.getAbsolutePath(), fileName + ".json").toString());
         File tempFile = null;
         PrintWriter printWriter = null;
@@ -111,5 +130,10 @@ public class JsonFileManager {
             if (printWriter != null)
                 printWriter.close();
         }
+    }
+
+    public boolean delete(String fileName) {
+        File file = new File(Paths.get(dir.getAbsolutePath(), fileName + ".json").toString());
+        return file.delete();
     }
 }

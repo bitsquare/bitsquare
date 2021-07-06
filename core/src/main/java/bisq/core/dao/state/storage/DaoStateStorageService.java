@@ -24,6 +24,7 @@ import bisq.core.dao.state.model.DaoState;
 import bisq.network.p2p.storage.persistence.ResourceDataStoreService;
 import bisq.network.p2p.storage.persistence.StoreService;
 
+import bisq.common.app.DevEnv;
 import bisq.common.config.Config;
 import bisq.common.file.FileUtil;
 import bisq.common.persistence.PersistenceManager;
@@ -63,7 +64,9 @@ public class DaoStateStorageService extends StoreService<DaoStateStore> {
         this.daoState = daoState;
         this.daoStateMonitoringService = daoStateMonitoringService;
 
-        resourceDataStoreService.addService(this);
+        if (DevEnv.isDaoActivated()) {
+            resourceDataStoreService.addService(this);
+        }
     }
 
 

@@ -55,7 +55,7 @@ public abstract class BsqNode implements DaoSetupService {
     protected final DaoStateService daoStateService;
     private final String genesisTxId;
     private final int genesisBlockHeight;
-    private final ExportJsonFilesService exportJsonFilesService;
+    protected final ExportJsonFilesService exportJsonFilesService;
     private final DaoStateSnapshotService daoStateSnapshotService;
     private final P2PServiceListener p2PServiceListener;
     protected boolean parseBlockchainComplete;
@@ -209,21 +209,22 @@ public abstract class BsqNode implements DaoSetupService {
         parseBlockchainComplete = true;
         daoStateService.onParseBlockChainComplete();
 
-        maybeExportToJson();
+        exportJsonFilesService.onParseBlockChainComplete();
     }
 
     @SuppressWarnings("WeakerAccess")
     protected void startReOrgFromLastSnapshot() {
+        exportJsonFilesService.onReOrg(daoStateSnapshotService.getChainHeightOfPersistedState());
         daoStateSnapshotService.applySnapshot(true);
     }
-
 
     protected Optional<Block> doParseBlock(RawBlock rawBlock) throws RequiredReorgFromSnapshotException {
         // We check if we have a block with that height. If so we return. We do not use the chainHeight as with genesis
         // height we have no block but chainHeight is initially set to genesis height (bad design ;-( but a bit tricky
         // to change now as it used in many areas.)
-        if (daoStateService.getBlockAtHeight(rawBlock.getHeight()).isPresent()) {
-            log.info("We have already a block with the height of the new block. Height of new block={}", rawBlock.getHeight());
+        int blockHeight = rawBlock.getHeight();
+        if (daoStateService.getBlockAtHeight(blockHeight).isPresent()) {
+            log.info("We have already a block with the height of the new block. Height of new block={}", blockHeight);
             return Optional.empty();
         }
 
@@ -250,17 +251,17 @@ public abstract class BsqNode implements DaoSetupService {
             // list if there is any potential candidate with the correct height and if so we remove that from that list.
 
             int heightForNextBlock = daoStateService.getChainHeight() + 1;
-            if (rawBlock.getHeight() > heightForNextBlock) {
+            if (blockHeight > heightForNextBlock) {
                 if (!pendingBlocks.contains(rawBlock)) {
                     pendingBlocks.add(rawBlock);
                     log.info("We received a block with a future block height. We store it as pending and try to apply " +
-                            "it at the next block. rawBlock: height/hash={}/{}", rawBlock.getHeight(), rawBlock.getHash());
+                            "it at the next block. rawBlock: height/hash={}/{}", blockHeight, rawBlock.getHash());
                 } else {
                     log.warn("We received a block with a future block height but we had it already added to our pendingBlocks.");
                 }
-            } else if (rawBlock.getHeight() >= daoStateService.getGenesisBlockHeight()) {
+            } else if (blockHeight >= daoStateService.getGenesisBlockHeight()) {
                 // We received an older block. We compare if we have it in our chain.
-                Optional<Block> optionalBlock = daoStateService.getBlockAtHeight(rawBlock.getHeight());
+                Optional<Block> optionalBlock = daoStateService.getBlockAtHeight(blockHeight);
                 if (optionalBlock.isPresent()) {
                     if (optionalBlock.get().getHash().equals(rawBlock.getPreviousBlockHash())) {
                         log.info("We received an old block we have already parsed and added. We ignore it.");
@@ -277,7 +278,7 @@ public abstract class BsqNode implements DaoSetupService {
             Optional<Block> lastBlock = daoStateService.getLastBlock();
             log.warn("Block not connecting:\n" +
                             "New block height/hash/previousBlockHash={}/{}/{}, latest block height/hash={}/{}",
-                    rawBlock.getHeight(),
+                    blockHeight,
                     rawBlock.getHash(),
                     rawBlock.getPreviousBlockHash(),
                     lastBlock.isPresent() ? lastBlock.get().getHeight() : "lastBlock not present",
@@ -288,9 +289,5 @@ public abstract class BsqNode implements DaoSetupService {
             throw new RequiredReorgFromSnapshotException(rawBlock);
         }
         return Optional.empty();
-    }
-
-    protected void maybeExportToJson() {
-        exportJsonFilesService.maybeExportToJson();
     }
 }
