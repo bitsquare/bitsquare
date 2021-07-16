@@ -3,10 +3,10 @@
 }
 
 .popover > .border {
-    -fx-stroke: linear-gradient(to bottom, rgba(0,0,0, .3), rgba(0, 0, 0, .7)) ;
-    -fx-stroke-width: 0.5;
-    -fx-fill: rgba(255.0,255.0,255.0, .95);
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,.2), 10.0, 0.5, 2.0, 2.0);
+    -fx-stroke: linear-gradient(to bottom, rgba(0, 0, 0, .3), rgba(0, 0, 0, .7));
+    -fx-stroke-width: 1;
+    -fx-fill: rgba(255.0, 255.0, 255.0, .95);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, .2), 10.0, 0.5, 2.0, 2.0);
 }
 
 .popover > .content {
@@ -15,7 +15,7 @@
 .popover > .detached {
 }
 
-.popover > .content > .title > .text  {
+.popover > .content > .title > .text {
     -fx-padding: 6.0 6.0 0.0 6.0;
     -fx-text-fill: rgba(120, 120, 120, .8);
     -fx-font-weight: bold;
@@ -26,11 +26,11 @@
 }
 
 .popover > .content > .title > .icon > .graphics > .circle {
-    -fx-fill: gray ;
-    -fx-effect: innershadow(gaussian, rgba(0,0,0,.2), 3, 0.5, 1.0, 1.0);
+    -fx-fill: gray;
+    -fx-effect: innershadow(gaussian, rgba(0, 0, 0, .2), 3, 0.5, 1.0, 1.0);
 }
 
 .popover > .content > .title > .icon > .graphics > .line {
-    -fx-stroke: white ;
+    -fx-stroke: white;
     -fx-stroke-width: 2;
 }

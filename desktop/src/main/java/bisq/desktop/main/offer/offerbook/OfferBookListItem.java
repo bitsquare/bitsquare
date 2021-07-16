@@ -38,6 +38,8 @@ import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
+import org.jetbrains.annotations.NotNull;
+
 @Slf4j
 
 public class OfferBookListItem {
@@ -55,101 +57,111 @@ public class OfferBookListItem {
     public WitnessAgeData getWitnessAgeData(AccountAgeWitnessService accountAgeWitnessService,
                                             SignedWitnessService signedWitnessService) {
         if (witnessAgeData == null) {
-            long ageInMs;
-            long daysSinceSignedAsLong = -1;
-            long accountAgeDaysAsLong = -1;
-            long accountAgeDaysNotYetSignedAsLong = -1;
-            String displayString;
-            String info;
-            GlyphIcons icon;
-
             if (CurrencyUtil.isCryptoCurrency(offer.getCurrencyCode())) {
-                // Altcoins
-                displayString = Res.get("offerbook.timeSinceSigning.notSigned.noNeed");
-                info = Res.get("shared.notSigned.noNeedAlts");
-                icon = MaterialDesignIcon.INFORMATION_OUTLINE;
+                witnessAgeData = new WitnessAgeData(WitnessAgeData.TYPE_ALTCOINS);
             } else if (PaymentMethod.hasChargebackRisk(offer.getPaymentMethod(), offer.getCurrencyCode())) {
                 // Fiat and signed witness required
                 Optional<AccountAgeWitness> optionalWitness = accountAgeWitnessService.findWitness(offer);
-                AccountAgeWitnessService.SignState signState = optionalWitness.map(accountAgeWitnessService::getSignState)
+                AccountAgeWitnessService.SignState signState = optionalWitness
+                        .map(accountAgeWitnessService::getSignState)
                         .orElse(AccountAgeWitnessService.SignState.UNSIGNED);
-                boolean isSignedAccountAgeWitness = optionalWitness.map(signedWitnessService::isSignedAccountAgeWitness)
+
+                boolean isSignedAccountAgeWitness = optionalWitness
+                        .map(signedWitnessService::isSignedAccountAgeWitness)
                         .orElse(false);
+
                 if (isSignedAccountAgeWitness || !signState.equals(AccountAgeWitnessService.SignState.UNSIGNED)) {
                     // either signed & limits lifted, or waiting for limits to be lifted
                     // Or banned
-                    daysSinceSignedAsLong = TimeUnit.MILLISECONDS.toDays(optionalWitness.map(witness ->
-                            accountAgeWitnessService.getWitnessSignAge(witness, new Date()))
-                            .orElse(0L));
-                    displayString = Res.get("offerbook.timeSinceSigning.daysSinceSigning", daysSinceSignedAsLong);
-                    info = Res.get("offerbook.timeSinceSigning.info", signState.getDisplayString());
+                    witnessAgeData = new WitnessAgeData(
+                            signState.isLimitLifted() ? WitnessAgeData.TYPE_SIGNED_AND_LIMIT_LIFTED : WitnessAgeData.TYPE_SIGNED_OR_BANNED,
+                            optionalWitness.map(witness -> accountAgeWitnessService.getWitnessSignAge(witness, new Date())).orElse(0L),
+                            signState);
                 } else {
-                    // Unsigned case
-                    ageInMs = optionalWitness.map(e -> accountAgeWitnessService.getAccountAge(e, new Date()))
-                            .orElse(-1L);
-                    accountAgeDaysNotYetSignedAsLong = ageInMs > -1 ? TimeUnit.MILLISECONDS.toDays(ageInMs) : 0;
-                    displayString = Res.get("offerbook.timeSinceSigning.notSigned");
-                    info = Res.get("shared.notSigned", accountAgeDaysNotYetSignedAsLong);
+                    witnessAgeData = new WitnessAgeData(
+                            WitnessAgeData.TYPE_NOT_SIGNED,
+                            optionalWitness.map(e -> accountAgeWitnessService.getAccountAge(e, new Date())).orElse(0L),
+                            signState
+                    );
                 }
-
-                icon = GUIUtil.getIconForSignState(signState);
             } else {
                 // Fiat, no signed witness required, we show account age
-                ageInMs = accountAgeWitnessService.getAccountAge(offer);
-                accountAgeDaysAsLong = ageInMs > -1 ? TimeUnit.MILLISECONDS.toDays(ageInMs) : 0;
-                displayString = Res.get("offerbook.timeSinceSigning.notSigned.ageDays", accountAgeDaysAsLong);
-                info = Res.get("shared.notSigned.noNeedDays", accountAgeDaysAsLong);
-                icon = MaterialDesignIcon.CHECKBOX_MARKED_OUTLINE;
+                witnessAgeData = new WitnessAgeData(
+                        WitnessAgeData.TYPE_NOT_SIGNING_REQUIRED,
+                        accountAgeWitnessService.getAccountAge(offer)
+                );
             }
-
-            witnessAgeData = new WitnessAgeData(displayString, info, icon, daysSinceSignedAsLong, accountAgeDaysNotYetSignedAsLong, accountAgeDaysAsLong);
         }
         return witnessAgeData;
     }
 
     @Value
-    public static class WitnessAgeData {
-        private final String displayString;
-        private final String info;
-        private final GlyphIcons icon;
-        private final Long daysSinceSignedAsLong;
-        private final long accountAgeDaysNotYetSignedAsLong;
-        private final Long accountAgeDaysAsLong;
+    public static class WitnessAgeData implements Comparable<WitnessAgeData> {
+        String displayString;
+        String info;
+        GlyphIcons icon;
         // Used for sorting
-        private final Long type;
+        Long type;
         // Used for sorting
-        private final Long days;
+        Long days;
 
-        public WitnessAgeData(String displayString,
-                              String info,
-                              GlyphIcons icon,
-                              long daysSinceSignedAsLong,
-                              long accountAgeDaysNotYetSignedAsLong,
-                              long accountAgeDaysAsLong) {
-            this.displayString = displayString;
-            this.info = info;
-            this.icon = icon;
-            this.daysSinceSignedAsLong = daysSinceSignedAsLong;
-            this.accountAgeDaysNotYetSignedAsLong = accountAgeDaysNotYetSignedAsLong;
-            this.accountAgeDaysAsLong = accountAgeDaysAsLong;
+        public static final long TYPE_SIGNED_AND_LIMIT_LIFTED = 4L;
+        public static final long TYPE_SIGNED_OR_BANNED = 3L;
+        public static final long TYPE_NOT_SIGNED = 2L;
+        public static final long TYPE_NOT_SIGNING_REQUIRED = 1L;
+        public static final long TYPE_ALTCOINS = 0L;
 
-            if (daysSinceSignedAsLong > -1) {
-                // First we show signed accounts sorted by days
-                this.type = 3L;
-                this.days = daysSinceSignedAsLong;
-            } else if (accountAgeDaysNotYetSignedAsLong > -1) {
-                // Next group is not yet signed accounts sorted by account age
-                this.type = 2L;
-                this.days = accountAgeDaysNotYetSignedAsLong;
-            } else if (accountAgeDaysAsLong > -1) {
-                // Next group is not signing required accounts sorted by account age
-                this.type = 1L;
-                this.days = accountAgeDaysAsLong;
+        public WitnessAgeData(long type) {
+            this(type, 0, null);
+        }
+
+        public WitnessAgeData(long type, long days) {
+            this(type, days, null);
+        }
+
+        public WitnessAgeData(long type, long age, AccountAgeWitnessService.SignState signState) {
+            this.type = type;
+            long days = age > -1 ? TimeUnit.MILLISECONDS.toDays(age) : 0;
+            this.days = days;
+
+            if (type == TYPE_SIGNED_AND_LIMIT_LIFTED) {
+                this.displayString = Res.get("offerbook.timeSinceSigning.daysSinceSigning", days);
+                this.info = Res.get("offerbook.timeSinceSigning.tooltip.info.signedAndLifted");
+                this.icon = GUIUtil.getIconForSignState(signState);
+            } else if (type == TYPE_SIGNED_OR_BANNED) {
+                this.displayString = Res.get("offerbook.timeSinceSigning.daysSinceSigning", days);
+                this.info = Res.get("offerbook.timeSinceSigning.tooltip.info.signed");
+                this.icon = GUIUtil.getIconForSignState(signState);
+            } else if (type == TYPE_NOT_SIGNED) {
+                this.displayString = Res.get("offerbook.timeSinceSigning.notSigned");
+                this.info = Res.get("offerbook.timeSinceSigning.tooltip.info.unsigned");
+                this.icon = GUIUtil.getIconForSignState(signState);
+            } else if (type == TYPE_NOT_SIGNING_REQUIRED) {
+                this.displayString = Res.get("offerbook.timeSinceSigning.notSigned.ageDays", days);
+                this.info = Res.get("shared.notSigned.noNeedDays", days);
+                this.icon = MaterialDesignIcon.CHECKBOX_MARKED_OUTLINE;
             } else {
-                // No signing and age required (altcoins)
-                this.type = 0L;
-                this.days = 0L;
+                this.displayString = Res.get("offerbook.timeSinceSigning.notSigned.noNeed");
+                this.info = Res.get("shared.notSigned.noNeedAlts");
+                this.icon = MaterialDesignIcon.INFORMATION_OUTLINE;
             }
+        }
+
+        public boolean isAccountSigned() {
+            return this.type == TYPE_SIGNED_AND_LIMIT_LIFTED || this.type == TYPE_SIGNED_OR_BANNED;
+        }
+
+        public boolean isLimitLifted() {
+            return this.type == TYPE_SIGNED_AND_LIMIT_LIFTED;
+        }
+
+        public boolean isSigningRequired() {
+            return this.type != TYPE_NOT_SIGNING_REQUIRED && this.type != TYPE_ALTCOINS;
+        }
+
+        @Override
+        public int compareTo(@NotNull WitnessAgeData o) {
+            return (int) (this.type.equals(o.getType()) ? this.days - o.getDays() : this.type - o.getType());
         }
     }
 }

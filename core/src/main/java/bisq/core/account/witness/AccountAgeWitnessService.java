@@ -131,6 +131,10 @@ public class AccountAgeWitnessService {
             return String.format(displayString, daysUntilLimitLifted);
         }
 
+        public boolean isLimitLifted() {
+            return this == PEER_LIMIT_LIFTED || this == PEER_SIGNER || this == ARBITRATOR;
+        }
+
     }
 
     private final KeyRing keyRing;

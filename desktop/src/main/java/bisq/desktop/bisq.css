@@ -609,6 +609,11 @@ tree-table-view:focused {
     -fx-font-size: 13;
 }
 
+.bold-text,
+.bold-text .text {
+    -fx-font-weight: bold;
+}
+
 /* Splash */
 #splash {
     -fx-background-color: -bs-background-color;
@@ -1914,6 +1919,21 @@ textfield */
     -fx-font-size: 0.846em;
     -fx-background-insets: 44;
     -fx-effect: dropshadow(gaussian, -bs-text-color-transparent-dark, 44, 0, -1, 3);
+}
+
+.account-status-title {
+    -fx-font-size: 0.769em;
+    -fx-font-family: "IBM Plex Sans Medium";
+}
+
+.account-status-inactive-info-item {
+    -fx-text-fill: -bs-color-gray-dim;
+    -fx-fill: -bs-color-gray-dim;
+}
+
+.account-status-active-info-item {
+    -fx-text-fill: -fx-accent;
+    -fx-fill: -fx-accent;
 }
 
 #price-feed-combo {

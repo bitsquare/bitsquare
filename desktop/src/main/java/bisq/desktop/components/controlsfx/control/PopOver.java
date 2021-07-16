@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2013, ControlsFX
+/*
+ * Copyright (c) 2013, 2016 ControlsFX
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,14 +24,26 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package bisq.desktop.components.controlsfx.control;
 
-import static java.util.Objects.requireNonNull;
-import static javafx.scene.input.MouseEvent.MOUSE_CLICKED;
 import bisq.desktop.components.controlsfx.skin.PopOverSkin;
+
 import javafx.animation.FadeTransition;
+
+import javafx.stage.Window;
+import javafx.stage.WindowEvent;
+
+import javafx.scene.Node;
+import javafx.scene.control.Label;
+import javafx.scene.control.PopupControl;
+import javafx.scene.control.Skin;
+import javafx.scene.layout.StackPane;
+
+import javafx.geometry.Bounds;
+import javafx.geometry.Insets;
+
 import javafx.beans.InvalidationListener;
-import javafx.beans.Observable;
 import javafx.beans.WeakInvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
@@ -42,19 +54,18 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.beans.value.WeakChangeListener;
+
 import javafx.event.EventHandler;
-import javafx.geometry.Bounds;
-import javafx.geometry.Insets;
-import javafx.scene.Node;
-import javafx.scene.control.Label;
-import javafx.scene.control.PopupControl;
-import javafx.scene.control.Skin;
-import javafx.scene.input.MouseEvent;
-import javafx.stage.Window;
-import javafx.stage.WindowEvent;
+import javafx.event.WeakEventHandler;
+
 import javafx.util.Duration;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static java.util.Objects.requireNonNull;
+import static javafx.scene.input.MouseEvent.MOUSE_CLICKED;
 
 /**
  * The PopOver control provides detailed information about an owning node in a
@@ -62,17 +73,28 @@ import javafx.util.Duration;
  * window decorations) and an arrow pointing at the owner. Due to the nature of
  * popup windows the PopOver will move around with the parent window when the
  * user drags it. <br>
- * <center> <img src="popover.png"/> </center> <br>
+ * <center> <img src="popover.png" alt="Screenshot of PopOver"> </center> <br>
  * The PopOver can be detached from the owning node by dragging it away from the
  * owner. It stops displaying an arrow and starts displaying a title and a close
  * icon. <br>
  * <br>
- * <center> <img src="popover-detached.png"/> </center> <br>
+ * <center> <img src="popover-detached.png"
+ * alt="Screenshot of a detached PopOver"> </center> <br>
  * The following image shows a popover with an accordion content node. PopOver
  * controls are automatically resizing themselves when the content node changes
  * its size.<br>
  * <br>
- * <center> <img src="popover-accordion.png"/> </center> <br>
+ * <center> <img src="popover-accordion.png"
+ * alt="Screenshot of PopOver containing an Accordion"> </center> <br>
+ * For styling apply stylesheets to the root pane of the PopOver.
+ *
+ * <h3>Example:</h3>
+ *
+ * <pre>
+ * PopOver popOver = new PopOver();
+ * popOver.getRoot().getStylesheets().add(...);
+ * </pre>
+ *
  */
 public class PopOver extends PopupControl {
 
@@ -84,6 +106,12 @@ public class PopOver extends PopupControl {
 
     private double targetY;
 
+    private final SimpleBooleanProperty animated = new SimpleBooleanProperty(true);
+    private final ObjectProperty<Duration> fadeInDuration = new SimpleObjectProperty<>(DEFAULT_FADE_DURATION);
+    private final ObjectProperty<Duration> fadeOutDuration = new SimpleObjectProperty<>(DEFAULT_FADE_DURATION);
+
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
+
     /**
      * Creates a pop over with a label as the content node.
      */
@@ -92,30 +120,24 @@ public class PopOver extends PopupControl {
 
         getStyleClass().add(DEFAULT_STYLE_CLASS);
 
+        getRoot().getStylesheets().add(
+                requireNonNull(PopOver.class.getResource("popover.css")).toExternalForm()); //$NON-NLS-1$
+
         setAnchorLocation(AnchorLocation.WINDOW_TOP_LEFT);
-        setOnHiding(new EventHandler<WindowEvent>() {
-            @Override
-            public void handle(WindowEvent evt) {
-                setDetached(false);
-            }
-        });
+        setOnHiding(evt -> setDetached(false));
 
         /*
          * Create some initial content.
          */
-        Label label = new Label("<No Content>"); //$NON-NLS-1$
+        Label label = new Label("No content set"); //$NON-NLS-1$
         label.setPrefSize(200, 200);
         label.setPadding(new Insets(4));
         setContentNode(label);
 
-        ChangeListener<Object> repositionListener = new ChangeListener<Object>() {
-            @Override
-            public void changed(ObservableValue<? extends Object> value,
-                                Object oldObject, Object newObject) {
-                if (isShowing() && !isDetached()) {
-                    show(getOwnerNode(), targetX, targetY);
-                    adjustWindowLocation();
-                }
+        InvalidationListener repositionListener = observable -> {
+            if (isShowing() && !isDetached()) {
+                show(getOwnerNode(), targetX, targetY);
+                adjustWindowLocation();
             }
         };
 
@@ -123,12 +145,21 @@ public class PopOver extends PopupControl {
         cornerRadius.addListener(repositionListener);
         arrowLocation.addListener(repositionListener);
         arrowIndent.addListener(repositionListener);
+        headerAlwaysVisible.addListener(repositionListener);
+
+        /*
+         * A detached popover should of course not automatically hide itself.
+         */
+        detached.addListener(it -> setAutoHide(!isDetached()));
+
+        setAutoHide(true);
     }
 
     /**
      * Creates a pop over with the given node as the content node.
      *
-     * @param content The content shown by the pop over
+     * @param content
+     *            The content shown by the pop over
      */
     public PopOver(Node content) {
         this();
@@ -141,9 +172,28 @@ public class PopOver extends PopupControl {
         return new PopOverSkin(this);
     }
 
+    private final StackPane root = new StackPane();
+
+    /**
+     * The root pane stores the content node of the popover. It is accessible
+     * via this method in order to support proper styling.
+     *
+     * <h3>Example:</h3>
+     *
+     * <pre>
+     * PopOver popOver = new PopOver();
+     * popOver.getRoot().getStylesheets().add(...);
+     * </pre>
+     *
+     * @return the root pane
+     */
+    public final StackPane getRoot() {
+        return root;
+    }
+
     // Content support.
 
-    private final ObjectProperty<Node> contentNode = new SimpleObjectProperty<Node>(
+    private final ObjectProperty<Node> contentNode = new SimpleObjectProperty<>(
             this, "contentNode") { //$NON-NLS-1$
         @Override
         public void setValue(Node node) {
@@ -151,7 +201,8 @@ public class PopOver extends PopupControl {
                 throw new IllegalArgumentException(
                         "content node can not be null"); //$NON-NLS-1$
             }
-        };
+        }
+
     };
 
     /**
@@ -186,41 +237,36 @@ public class PopOver extends PopupControl {
         contentNodeProperty().set(content);
     }
 
-    private InvalidationListener hideListener = new InvalidationListener() {
-        @Override
-        public void invalidated(Observable observable) {
-            if (!isDetached()) {
-                hide(Duration.ZERO);
-            }
+    private final InvalidationListener hideListener = observable -> {
+        if (!isDetached()) {
+            hide(Duration.ZERO);
         }
     };
 
-    private WeakInvalidationListener weakHideListener = new WeakInvalidationListener(
+    private final WeakInvalidationListener weakHideListener = new WeakInvalidationListener(
             hideListener);
 
-    private ChangeListener<Number> xListener = new ChangeListener<Number>() {
-        @Override
-        public void changed(ObservableValue<? extends Number> value,
-                            Number oldX, Number newX) {
-            setX(getX() + (newX.doubleValue() - oldX.doubleValue()));
+    private final ChangeListener<Number> xListener = (value, oldX, newX) -> {
+        if (!isDetached()) {
+            setAnchorX(getAnchorX() + (newX.doubleValue() - oldX.doubleValue()));
         }
     };
 
-    private WeakChangeListener<Number> weakXListener = new WeakChangeListener<>(
+    private final WeakChangeListener<Number> weakXListener = new WeakChangeListener<>(
             xListener);
 
-    private ChangeListener<Number> yListener = new ChangeListener<Number>() {
-        @Override
-        public void changed(ObservableValue<? extends Number> value,
-                            Number oldY, Number newY) {
-            setY(getY() + (newY.doubleValue() - oldY.doubleValue()));
+    private final ChangeListener<Number> yListener = (value, oldY, newY) -> {
+        if (!isDetached()) {
+            setAnchorY(getAnchorY() + (newY.doubleValue() - oldY.doubleValue()));
         }
     };
 
-    private WeakChangeListener<Number> weakYListener = new WeakChangeListener<>(
+    private final WeakChangeListener<Number> weakYListener = new WeakChangeListener<>(
             yListener);
 
     private Window ownerWindow;
+    private final EventHandler<WindowEvent> closePopOverOnOwnerWindowCloseLambda = event -> ownerWindowClosing();
+    private final WeakEventHandler<WindowEvent> closePopOverOnOwnerWindowClose = new WeakEventHandler<>(closePopOverOnOwnerWindowCloseLambda);
 
     /**
      * Shows the pop over in a position relative to the edges of the given owner
@@ -286,6 +332,38 @@ public class PopOver extends PopupControl {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public final void show(Window owner) {
+        super.show(owner);
+        ownerWindow = owner;
+
+        if (isAnimated()) {
+            showFadeInAnimation(getFadeInDuration());
+        }
+
+        ownerWindow.addEventFilter(WindowEvent.WINDOW_CLOSE_REQUEST,
+                closePopOverOnOwnerWindowClose);
+        ownerWindow.addEventFilter(WindowEvent.WINDOW_HIDING,
+                closePopOverOnOwnerWindowClose);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public final void show(Window ownerWindow, double anchorX, double anchorY) {
+        super.show(ownerWindow, anchorX, anchorY);
+        this.ownerWindow = ownerWindow;
+
+        if (isAnimated()) {
+            showFadeInAnimation(getFadeInDuration());
+        }
+
+        ownerWindow.addEventFilter(WindowEvent.WINDOW_CLOSE_REQUEST,
+                closePopOverOnOwnerWindowClose);
+        ownerWindow.addEventFilter(WindowEvent.WINDOW_HIDING,
+                closePopOverOnOwnerWindowClose);
+    }
+
     /**
      * Makes the pop over visible at the give location and associates it with
      * the given owner node. The x and y coordinate will be the target location
@@ -300,7 +378,7 @@ public class PopOver extends PopupControl {
      */
     @Override
     public final void show(Node owner, double x, double y) {
-        show(owner, x, y, DEFAULT_FADE_DURATION);
+        show(owner, x, y, getFadeInDuration());
     }
 
     /**
@@ -315,14 +393,14 @@ public class PopOver extends PopupControl {
      * @param y
      *            the y coordinate for the pop over arrow tip
      * @param fadeInDuration
-     *            the time it takes for the pop over to be fully visible
+     *            the time it takes for the pop over to be fully visible. This duration takes precedence over the fade-in property without setting.
      */
     public final void show(Node owner, double x, double y,
                            Duration fadeInDuration) {
 
         /*
-         * Calling show() a second time without first closing the
-         * pop over causes it to be placed at the wrong location.
+         * Calling show() a second time without first closing the pop over
+         * causes it to be placed at the wrong location.
          */
         if (ownerWindow != null && isShowing()) {
             super.hide();
@@ -360,18 +438,15 @@ public class PopOver extends PopupControl {
 
             /*
              * The user clicked somewhere into the transparent background. If
-             * this is the case the hide the window (when attached).
+             * this is the case then hide the window (when attached).
              */
-            getScene().addEventHandler(MOUSE_CLICKED,
-                    new EventHandler<MouseEvent>() {
-                        public void handle(MouseEvent evt) {
-                            if (evt.getTarget().equals(getScene().getRoot())) {
-                                if (!isDetached()) {
-                                    hide();
-                                }
-                            }
-                        };
-                    });
+            getScene().addEventHandler(MOUSE_CLICKED, mouseEvent -> {
+                if (mouseEvent.getTarget().equals(getScene().getRoot())) {
+                    if (!isDetached()) {
+                        hide();
+                    }
+                }
+            });
 
             /*
              * Move the window so that the arrow will end up pointing at the
@@ -382,6 +457,18 @@ public class PopOver extends PopupControl {
 
         super.show(owner, x, y);
 
+        if (isAnimated()) {
+            showFadeInAnimation(fadeInDuration);
+        }
+
+        // Bug fix - close popup when owner window is closing
+        ownerWindow.addEventFilter(WindowEvent.WINDOW_CLOSE_REQUEST,
+                closePopOverOnOwnerWindowClose);
+        ownerWindow.addEventFilter(WindowEvent.WINDOW_HIDING,
+                closePopOverOnOwnerWindowClose);
+    }
+
+    private void showFadeInAnimation(Duration fadeInDuration) {
         // Fade In
         Node skinNode = getSkin().getNode();
         skinNode.setOpacity(0);
@@ -392,6 +479,10 @@ public class PopOver extends PopupControl {
         fadeIn.play();
     }
 
+    private void ownerWindowClosing() {
+        hide(Duration.ZERO);
+    }
+
     /**
      * Hides the pop over by quickly changing its opacity to 0.
      *
@@ -399,7 +490,7 @@ public class PopOver extends PopupControl {
      */
     @Override
     public final void hide() {
-        hide(DEFAULT_FADE_DURATION);
+        hide(getFadeOutDuration());
     }
 
     /**
@@ -411,21 +502,32 @@ public class PopOver extends PopupControl {
      * @since 1.0
      */
     public final void hide(Duration fadeOutDuration) {
+        log.info("hide:" + fadeOutDuration.toString());
+        //We must remove EventFilter in order to prevent memory leak.
+        if (ownerWindow != null) {
+            ownerWindow.removeEventFilter(WindowEvent.WINDOW_CLOSE_REQUEST,
+                    closePopOverOnOwnerWindowClose);
+            ownerWindow.removeEventFilter(WindowEvent.WINDOW_HIDING,
+                    closePopOverOnOwnerWindowClose);
+        }
         if (fadeOutDuration == null) {
             fadeOutDuration = DEFAULT_FADE_DURATION;
         }
 
         if (isShowing()) {
-            // Fade Out
-            Node skinNode = getSkin().getNode();
-            skinNode.setOpacity(0);
+            if (isAnimated()) {
+                // Fade Out
+                Node skinNode = getSkin().getNode();
 
-            FadeTransition fadeOut = new FadeTransition(fadeOutDuration,
-                    skinNode);
-            fadeOut.setFromValue(1);
-            fadeOut.setToValue(0);
-            fadeOut.setOnFinished(evt -> super.hide());
-            fadeOut.play();
+                FadeTransition fadeOut = new FadeTransition(fadeOutDuration,
+                        skinNode);
+                fadeOut.setFromValue(skinNode.getOpacity());
+                fadeOut.setToValue(0);
+                fadeOut.setOnFinished(evt -> super.hide());
+                fadeOut.play();
+            } else {
+                super.hide();
+            }
         }
     }
 
@@ -436,26 +538,26 @@ public class PopOver extends PopupControl {
             case TOP_CENTER:
             case TOP_LEFT:
             case TOP_RIGHT:
-                setX(getX() + bounds.getMinX() - computeXOffset());
-                setY(getY() + bounds.getMinY() + getArrowSize());
+                setAnchorX(getAnchorX() + bounds.getMinX() - computeXOffset());
+                setAnchorY(getAnchorY() + bounds.getMinY() + getArrowSize());
                 break;
             case LEFT_TOP:
             case LEFT_CENTER:
             case LEFT_BOTTOM:
-                setX(getX() + bounds.getMinX() + getArrowSize());
-                setY(getY() + bounds.getMinY() - computeYOffset());
+                setAnchorX(getAnchorX() + bounds.getMinX() + getArrowSize());
+                setAnchorY(getAnchorY() + bounds.getMinY() - computeYOffset());
                 break;
             case BOTTOM_CENTER:
             case BOTTOM_LEFT:
             case BOTTOM_RIGHT:
-                setX(getX() + bounds.getMinX() - computeXOffset());
-                setY(getY() - bounds.getMinY() - bounds.getMaxY() - 1);
+                setAnchorX(getAnchorX() + bounds.getMinX() - computeXOffset());
+                setAnchorY(getAnchorY() - bounds.getMinY() - bounds.getMaxY() - 1);
                 break;
             case RIGHT_TOP:
             case RIGHT_BOTTOM:
             case RIGHT_CENTER:
-                setX(getX() - bounds.getMinX() - bounds.getMaxX() - 1);
-                setY(getY() + bounds.getMinY() - computeYOffset());
+                setAnchorX(getAnchorX() - bounds.getMinX() - bounds.getMaxX() - 1);
+                setAnchorY(getAnchorY() + bounds.getMinY() - computeYOffset());
                 break;
         }
     }
@@ -506,6 +608,74 @@ public class PopOver extends PopupControl {
         if (isDetachable()) {
             setDetached(true);
         }
+    }
+
+    // always show header
+
+    private final BooleanProperty headerAlwaysVisible = new SimpleBooleanProperty(this, "headerAlwaysVisible"); //$NON-NLS-1$
+
+    /**
+     * Determines whether or not the {@link PopOver} header should remain visible, even while attached.
+     */
+    public final BooleanProperty headerAlwaysVisibleProperty() {
+        return headerAlwaysVisible;
+    }
+
+    /**
+     * Sets the value of the headerAlwaysVisible property.
+     *
+     * @param visible
+     *            if true, then the header is visible even while attached
+     *
+     * @see #headerAlwaysVisibleProperty()
+     */
+    public final void setHeaderAlwaysVisible(boolean visible) {
+        headerAlwaysVisible.setValue(visible);
+    }
+
+    /**
+     * Returns the value of the detachable property.
+     *
+     * @return true if the header is visible even while attached
+     *
+     * @see #headerAlwaysVisibleProperty()
+     */
+    public final boolean isHeaderAlwaysVisible() {
+        return headerAlwaysVisible.getValue();
+    }
+
+    // enable close button
+
+    private final BooleanProperty closeButtonEnabled = new SimpleBooleanProperty(this, "closeButtonEnabled", true); //$NON-NLS-1$
+
+    /**
+     * Determines whether or not the header's close button should be available.
+     */
+    public final BooleanProperty closeButtonEnabledProperty() {
+        return closeButtonEnabled;
+    }
+
+    /**
+     * Sets the value of the closeButtonEnabled property.
+     *
+     * @param enabled
+     *            if false, the pop over will not be closeable by the header's close button
+     *
+     * @see #closeButtonEnabledProperty()
+     */
+    public final void setCloseButtonEnabled(boolean enabled) {
+        closeButtonEnabled.setValue(enabled);
+    }
+
+    /**
+     * Returns the value of the closeButtonEnabled property.
+     *
+     * @return true if the header's close button is enabled
+     *
+     * @see #closeButtonEnabledProperty()
+     */
+    public final boolean isCloseButtonEnabled() {
+        return closeButtonEnabled.getValue();
     }
 
     // detach support
@@ -561,7 +731,7 @@ public class PopOver extends PopupControl {
      * Sets the value of the detached property.
      *
      * @param detached
-     *            if true the pop over will change its appearance to "detached"
+     *            if true the pop over will change its apperance to "detached"
      *            mode
      *
      * @see #detachedProperty()
@@ -701,46 +871,42 @@ public class PopOver extends PopupControl {
 
     // Detached stage title
 
-    private final StringProperty detachedTitle = new SimpleStringProperty(this,
-            "detachedTitle", "Info"); //$NON-NLS-1$ //$NON-NLS-2$
+    private final StringProperty title = new SimpleStringProperty(this, "title", "No title set"); //$NON-NLS-1$ //$NON-NLS-2$
 
     /**
-     * Stores the title to display when the pop over becomes detached.
+     * Stores the title to display in the PopOver's header.
      *
-     * @return the detached title property
+     * @return the title property
      */
-    public final StringProperty detachedTitleProperty() {
-        return detachedTitle;
+    public final StringProperty titleProperty() {
+        return title;
     }
 
     /**
-     * Returns the value of the detached title property.
+     * Returns the value of the title property.
      *
      * @return the detached title
-     *
-     * @see #detachedTitleProperty()
+     * @see #titleProperty()
      */
-    public final String getDetachedTitle() {
-        return detachedTitleProperty().get();
+    public final String getTitle() {
+        return titleProperty().get();
     }
 
     /**
-     * Sets the value of the detached title property.
+     * Sets the value of the title property.
      *
-     * @param title
-     *            the title to use when detached
-     *
-     * @see #detachedTitleProperty()
+     * @param title the title to use when detached
+     * @see #titleProperty()
      */
-    public final void setDetachedTitle(String title) {
+    public final void setTitle(String title) {
         if (title == null) {
             throw new IllegalArgumentException("title can not be null"); //$NON-NLS-1$
         }
 
-        detachedTitleProperty().set(title);
+        titleProperty().set(title);
     }
 
-    private final ObjectProperty<ArrowLocation> arrowLocation = new SimpleObjectProperty<PopOver.ArrowLocation>(
+    private final ObjectProperty<ArrowLocation> arrowLocation = new SimpleObjectProperty<>(
             this, "arrowLocation", ArrowLocation.LEFT_TOP); //$NON-NLS-1$
 
     /**
@@ -782,6 +948,93 @@ public class PopOver extends PopupControl {
      * All possible arrow locations.
      */
     public enum ArrowLocation {
-        LEFT_TOP, LEFT_CENTER, LEFT_BOTTOM, RIGHT_TOP, RIGHT_CENTER, RIGHT_BOTTOM, TOP_LEFT, TOP_CENTER, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT;
+        LEFT_TOP, LEFT_CENTER, LEFT_BOTTOM, RIGHT_TOP, RIGHT_CENTER, RIGHT_BOTTOM, TOP_LEFT, TOP_CENTER, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT
+    }
+
+    /**
+     * Stores the fade-in duration. This should be set before calling PopOver.show(..).
+     *
+     * @return the fade-in duration property
+     */
+    public final ObjectProperty<Duration> fadeInDurationProperty() {
+        return fadeInDuration;
+    }
+
+    /**
+     * Stores the fade-out duration.
+     *
+     * @return the fade-out duration property
+     */
+    public final ObjectProperty<Duration> fadeOutDurationProperty() {
+        return fadeOutDuration;
+    }
+
+    /**
+     * Returns the value of the fade-in duration property.
+     *
+     * @return the fade-in duration
+     * @see #fadeInDurationProperty()
+     */
+    public final Duration getFadeInDuration() {
+        return fadeInDurationProperty().get();
+    }
+
+    /**
+     * Sets the value of the fade-in duration property. This should be set before calling PopOver.show(..).
+     *
+     * @param duration the requested fade-in duration
+     * @see #fadeInDurationProperty()
+     */
+    public final void setFadeInDuration(Duration duration) {
+        fadeInDurationProperty().setValue(duration);
+    }
+
+    /**
+     * Returns the value of the fade-out duration property.
+     *
+     * @return the fade-out duration
+     * @see #fadeOutDurationProperty()
+     */
+    public final Duration getFadeOutDuration() {
+        return fadeOutDurationProperty().get();
+    }
+
+    /**
+     * Sets the value of the fade-out duration property.
+     *
+     * @param duration the requested fade-out duration
+     * @see #fadeOutDurationProperty()
+     */
+    public final void setFadeOutDuration(Duration duration) {
+        fadeOutDurationProperty().setValue(duration);
+    }
+
+    /**
+     * Stores the "animated" flag. If true then the PopOver will be shown / hidden with a short fade in / out animation.
+     *
+     * @return the "animated" property
+     */
+    public final BooleanProperty animatedProperty() {
+        return animated;
+    }
+
+    /**
+     * Returns the value of the "animated" property.
+     *
+     * @return true if the PopOver will be shown and hidden with a short fade animation
+     * @see #animatedProperty()
+     */
+    public final boolean isAnimated() {
+        return animatedProperty().get();
+    }
+
+    /**
+     * Sets the value of the "animated" property.
+     *
+     * @param animated if true the PopOver will be shown and hidden with a short fade animation
+     * @see #animatedProperty()
+     */
+    public final void setAnimated(boolean animated) {
+        animatedProperty().set(animated);
     }
 }

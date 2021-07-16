@@ -59,10 +59,10 @@ public class HyperlinkWithIcon extends Hyperlink {
         this(text, icon, null);
     }
 
-    public HyperlinkWithIcon(String text, GlyphIcons icon, String style) {
+    public HyperlinkWithIcon(String text, GlyphIcons icon, String style, String iconSize) {
         super(text);
 
-        Text textIcon = FormBuilder.getIcon(icon);
+        Text textIcon = FormBuilder.getIcon(icon, iconSize);
         textIcon.setOpacity(0.7);
         textIcon.getStyleClass().addAll("hyperlink", "no-underline");
 
@@ -74,6 +74,10 @@ public class HyperlinkWithIcon extends Hyperlink {
         setPadding(new Insets(0));
 
         setIcon(textIcon);
+    }
+
+    public HyperlinkWithIcon(String text, GlyphIcons icon, String style) {
+        this(text, icon, style, "1.231em");
     }
 
     public void hideIcon() {

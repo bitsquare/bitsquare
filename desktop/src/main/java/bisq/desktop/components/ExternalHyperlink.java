@@ -28,4 +28,8 @@ public class ExternalHyperlink extends HyperlinkWithIcon {
     public ExternalHyperlink(String text, String style) {
         super(text, MaterialDesignIcon.LINK, style);
     }
+
+    public ExternalHyperlink(String text, String style, String iconSize) {
+        super(text, MaterialDesignIcon.LINK, style, iconSize);
+    }
 }

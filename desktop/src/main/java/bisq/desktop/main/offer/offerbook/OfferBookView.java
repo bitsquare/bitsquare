@@ -20,6 +20,7 @@ package bisq.desktop.main.offer.offerbook;
 import bisq.desktop.Navigation;
 import bisq.desktop.common.view.ActivatableViewAndModel;
 import bisq.desktop.common.view.FxmlView;
+import bisq.desktop.components.AccountStatusTooltipLabel;
 import bisq.desktop.components.AutoTooltipButton;
 import bisq.desktop.components.AutoTooltipLabel;
 import bisq.desktop.components.AutoTooltipSlideToggleButton;
@@ -290,10 +291,7 @@ public class OfferBookView extends ActivatableViewAndModel<GridPane, OfferBookVi
 
         }, Comparator.nullsFirst(Comparator.naturalOrder())));
 
-        Comparator<OfferBookListItem> comparator = Comparator.comparing(e -> e.getWitnessAgeData(accountAgeWitnessService, signedWitnessService).getType(), Comparator.nullsFirst(Comparator.naturalOrder()));
-        signingStateColumn.setComparator(comparator.
-                thenComparing(e -> e.getWitnessAgeData(accountAgeWitnessService, signedWitnessService).getDays(),
-                        Comparator.nullsFirst(Comparator.naturalOrder())));
+        signingStateColumn.setComparator(Comparator.comparing(e -> e.getWitnessAgeData(accountAgeWitnessService, signedWitnessService), Comparator.nullsFirst(Comparator.naturalOrder())));
 
         nrOfOffersLabel = new AutoTooltipLabel("");
         nrOfOffersLabel.setId("num-offers");
@@ -1054,11 +1052,13 @@ public class OfferBookView extends ActivatableViewAndModel<GridPane, OfferBookVi
                                             tableRow.setOnMousePressed(null);
                                         } else {
                                             button.setDefaultButton(false);
-                                            tableRow.setOnMousePressed(e -> {
-                                                // ugly hack to get the icon clickable when deactivated
-                                                if (!(e.getTarget() instanceof ImageView || e.getTarget() instanceof Canvas))
-                                                    onShowInfo(offer, canTakeOfferResult);
-                                            });
+                                            if (!myOffer) {
+                                                tableRow.setOnMousePressed(e -> {
+                                                    // ugly hack to get the icon clickable when deactivated
+                                                    if (!(e.getTarget() instanceof ImageView || e.getTarget() instanceof Canvas))
+                                                        onShowInfo(offer, canTakeOfferResult);
+                                                });
+                                            }
                                         }
                                     }
 
@@ -1139,10 +1139,9 @@ public class OfferBookView extends ActivatableViewAndModel<GridPane, OfferBookVi
 
                         if (item != null && !empty) {
                             var witnessAgeData = item.getWitnessAgeData(accountAgeWitnessService, signedWitnessService);
-                            InfoAutoTooltipLabel label = new InfoAutoTooltipLabel(witnessAgeData.getDisplayString(),
-                                    witnessAgeData.getIcon(),
-                                    ContentDisplay.RIGHT,
-                                    witnessAgeData.getInfo());
+                            var label = witnessAgeData.isSigningRequired()
+                                    ? new AccountStatusTooltipLabel(witnessAgeData, formatter)
+                                    : new InfoAutoTooltipLabel(witnessAgeData.getDisplayString(), witnessAgeData.getIcon(), ContentDisplay.RIGHT, witnessAgeData.getInfo());
                             setGraphic(label);
                         } else {
                             setGraphic(null);
