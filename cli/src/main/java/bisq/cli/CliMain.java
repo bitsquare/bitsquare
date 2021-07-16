@@ -39,10 +39,7 @@ import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
 
-import static bisq.cli.CurrencyFormat.formatMarketPrice;
-import static bisq.cli.CurrencyFormat.formatTxFeeRateInfo;
-import static bisq.cli.CurrencyFormat.toSatoshis;
-import static bisq.cli.CurrencyFormat.toSecurityDepositAsPct;
+import static bisq.cli.CurrencyFormat.*;
 import static bisq.cli.Method.*;
 import static bisq.cli.TableFormat.*;
 import static bisq.cli.opts.OptLabel.*;
@@ -59,6 +56,7 @@ import bisq.cli.opts.CancelOfferOptionParser;
 import bisq.cli.opts.CreateCryptoCurrencyPaymentAcctOptionParser;
 import bisq.cli.opts.CreateOfferOptionParser;
 import bisq.cli.opts.CreatePaymentAcctOptionParser;
+import bisq.cli.opts.EditOfferOptionParser;
 import bisq.cli.opts.GetAddressBalanceOptionParser;
 import bisq.cli.opts.GetBTCMarketPriceOptionParser;
 import bisq.cli.opts.GetBalanceOptionParser;
@@ -200,7 +198,7 @@ public class CliMain {
                     }
                     var currencyCode = opts.getCurrencyCode();
                     var price = client.getBtcPrice(currencyCode);
-                    out.println(formatMarketPrice(price));
+                    out.println(formatInternalFiatPrice(price));
                     return;
                 }
                 case getfundingaddresses: {
@@ -337,6 +335,7 @@ public class CliMain {
                     var marketPriceMargin = opts.getMktPriceMarginAsBigDecimal();
                     var securityDeposit = toSecurityDepositAsPct(opts.getSecurityDeposit());
                     var makerFeeCurrencyCode = opts.getMakerFeeCurrencyCode();
+                    var triggerPrice = 0; // Cannot be defined until offer is in book.
                     var offer = client.createOffer(direction,
                             currencyCode,
                             amount,
@@ -346,8 +345,32 @@ public class CliMain {
                             marketPriceMargin.doubleValue(),
                             securityDeposit,
                             paymentAcctId,
-                            makerFeeCurrencyCode);
+                            makerFeeCurrencyCode,
+                            triggerPrice);
                     out.println(formatOfferTable(singletonList(offer), currencyCode));
+                    return;
+                }
+                case editoffer: {
+                    var opts = new EditOfferOptionParser(args).parse();
+                    if (opts.isForHelp()) {
+                        out.println(client.getMethodHelp(method));
+                        return;
+                    }
+                    var offerId = opts.getOfferId();
+                    var fixedPrice = opts.getFixedPrice();
+                    var isUsingMktPriceMargin = opts.isUsingMktPriceMargin();
+                    var marketPriceMargin = opts.getMktPriceMarginAsBigDecimal();
+                    var triggerPrice = toInternalFiatPrice(opts.getTriggerPriceAsBigDecimal());
+                    var enable = opts.getEnableAsSignedInt();
+                    var editOfferType = opts.getOfferEditType();
+                    client.editOffer(offerId,
+                            fixedPrice,
+                            isUsingMktPriceMargin,
+                            marketPriceMargin.doubleValue(),
+                            triggerPrice,
+                            enable,
+                            editOfferType);
+                    out.println("offer has been edited");
                     return;
                 }
                 case canceloffer: {
@@ -754,6 +777,13 @@ public class CliMain {
             stream.format(rowFormat, "", "--fixed-price=<price> | --market-price=margin=<percent> \\", "");
             stream.format(rowFormat, "", "--security-deposit=<percent> \\", "");
             stream.format(rowFormat, "", "[--fee-currency=<bsq|btc>]", "");
+            stream.format(rowFormat, "", "[--trigger-price=<price>]", "");
+            stream.println();
+            stream.format(rowFormat, editoffer.name(), "--offer-id=<offer-id> \\", "Edit offer with id");
+            stream.format(rowFormat, "", "[--fixed-price=<price>] \\", "");
+            stream.format(rowFormat, "", "[--market-price=margin=<percent>] \\", "");
+            stream.format(rowFormat, "", "[--trigger-price=<price>] \\", "");
+            stream.format(rowFormat, "", "[--enabled=<true|false>]", "");
             stream.println();
             stream.format(rowFormat, canceloffer.name(), "--offer-id=<offer-id>", "Cancel offer with id");
             stream.println();

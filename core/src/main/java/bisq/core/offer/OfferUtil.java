@@ -364,6 +364,53 @@ public class OfferUtil {
                 Res.get("offerbook.warning.paymentMethodBanned"));
     }
 
+    // Returns an edited payload: a merge of the original offerPayload and
+    // editedOfferPayload fields.  Mutable fields are sourced from
+    // mutableOfferPayloadFields param, e.g., payment account details, price, etc.
+    // Immutable fields are sourced from the original openOffer param.
+    public OfferPayload getMergedOfferPayload(OpenOffer openOffer,
+                                              MutableOfferPayloadFields mutableOfferPayloadFields) {
+        OfferPayload originalOfferPayload = openOffer.getOffer().getOfferPayload();
+        return new OfferPayload(originalOfferPayload.getId(),
+                originalOfferPayload.getDate(),
+                originalOfferPayload.getOwnerNodeAddress(),
+                originalOfferPayload.getPubKeyRing(),
+                originalOfferPayload.getDirection(),
+                mutableOfferPayloadFields.getPrice(),
+                mutableOfferPayloadFields.getMarketPriceMargin(),
+                mutableOfferPayloadFields.isUseMarketBasedPrice(),
+                originalOfferPayload.getAmount(),
+                originalOfferPayload.getMinAmount(),
+                mutableOfferPayloadFields.getBaseCurrencyCode(),
+                mutableOfferPayloadFields.getCounterCurrencyCode(),
+                originalOfferPayload.getArbitratorNodeAddresses(),
+                originalOfferPayload.getMediatorNodeAddresses(),
+                mutableOfferPayloadFields.getPaymentMethodId(),
+                mutableOfferPayloadFields.getMakerPaymentAccountId(),
+                originalOfferPayload.getOfferFeePaymentTxId(),
+                mutableOfferPayloadFields.getCountryCode(),
+                mutableOfferPayloadFields.getAcceptedCountryCodes(),
+                mutableOfferPayloadFields.getBankId(),
+                mutableOfferPayloadFields.getAcceptedBankIds(),
+                originalOfferPayload.getVersionNr(),
+                originalOfferPayload.getBlockHeightAtOfferCreation(),
+                originalOfferPayload.getTxFee(),
+                originalOfferPayload.getMakerFee(),
+                originalOfferPayload.isCurrencyForMakerFeeBtc(),
+                originalOfferPayload.getBuyerSecurityDeposit(),
+                originalOfferPayload.getSellerSecurityDeposit(),
+                originalOfferPayload.getMaxTradeLimit(),
+                originalOfferPayload.getMaxTradePeriod(),
+                originalOfferPayload.isUseAutoClose(),
+                originalOfferPayload.isUseReOpenAfterAutoClose(),
+                originalOfferPayload.getLowerClosePrice(),
+                originalOfferPayload.getUpperClosePrice(),
+                originalOfferPayload.isPrivateOffer(),
+                originalOfferPayload.getHashOfChallenge(),
+                originalOfferPayload.getExtraDataMap(),
+                originalOfferPayload.getProtocolVersion());
+    }
+
     private Optional<Volume> getFeeInUserFiatCurrency(Coin makerFee,
                                                       boolean isCurrencyForMakerFeeBtc,
                                                       String userCurrencyCode,

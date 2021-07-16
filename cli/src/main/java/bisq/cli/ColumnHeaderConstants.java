@@ -46,6 +46,7 @@ class ColumnHeaderConstants {
     static final String COL_HEADER_CREATION_DATE = padEnd("Creation Date (UTC)", 20, ' ');
     static final String COL_HEADER_CURRENCY = "Currency";
     static final String COL_HEADER_DIRECTION = "Buy/Sell";
+    static final String COL_HEADER_ENABLED = "Enabled";
     static final String COL_HEADER_NAME = "Name";
     static final String COL_HEADER_PAYMENT_METHOD = "Payment Method";
     static final String COL_HEADER_PRICE = "Price in %-3s for 1 BTC";
@@ -64,7 +65,7 @@ class ColumnHeaderConstants {
     static final String COL_HEADER_TRADE_TX_FEE = padEnd("Tx Fee(BTC)", 12, ' ');
     static final String COL_HEADER_TRADE_MAKER_FEE = padEnd("Maker Fee(%-3s)", 12, ' '); // "Maker Fee(%-3s)";
     static final String COL_HEADER_TRADE_TAKER_FEE = padEnd("Taker Fee(%-3s)", 12, ' '); // "Taker Fee(%-3s)";
-
+    static final String COL_HEADER_TRIGGER_PRICE = "Trigger Price(%-3s)";
     static final String COL_HEADER_TX_ID = "Tx ID";
     static final String COL_HEADER_TX_INPUT_SUM = "Tx Inputs (BTC)";
     static final String COL_HEADER_TX_OUTPUT_SUM = "Tx Outputs (BTC)";

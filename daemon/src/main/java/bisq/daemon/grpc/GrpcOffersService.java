@@ -26,6 +26,8 @@ import bisq.proto.grpc.CancelOfferReply;
 import bisq.proto.grpc.CancelOfferRequest;
 import bisq.proto.grpc.CreateOfferReply;
 import bisq.proto.grpc.CreateOfferRequest;
+import bisq.proto.grpc.EditOfferReply;
+import bisq.proto.grpc.EditOfferRequest;
 import bisq.proto.grpc.GetMyOfferReply;
 import bisq.proto.grpc.GetMyOfferRequest;
 import bisq.proto.grpc.GetMyOffersReply;
@@ -89,10 +91,9 @@ class GrpcOffersService extends OffersImplBase {
     public void getMyOffer(GetMyOfferRequest req,
                            StreamObserver<GetMyOfferReply> responseObserver) {
         try {
-            Offer offer = coreApi.getMyOffer(req.getId());
-            OpenOffer openOffer = coreApi.getMyOpenOffer(req.getId());
+            OpenOffer openOffer = coreApi.getMyOffer(req.getId());
             var reply = GetMyOfferReply.newBuilder()
-                    .setOffer(toOfferInfo(offer, openOffer.getTriggerPrice()).toProtoMessage())
+                    .setOffer(toOfferInfo(openOffer).toProtoMessage())
                     .build();
             responseObserver.onNext(reply);
             responseObserver.onCompleted();
@@ -125,7 +126,8 @@ class GrpcOffersService extends OffersImplBase {
                             StreamObserver<GetMyOffersReply> responseObserver) {
         try {
             List<OfferInfo> result = coreApi.getMyOffers(req.getDirection(), req.getCurrencyCode())
-                    .stream().map(OfferInfo::toOfferInfo)
+                    .stream()
+                    .map(OfferInfo::toOfferInfo)
                     .collect(Collectors.toList());
             var reply = GetMyOffersReply.newBuilder()
                     .addAllOffers(result.stream()
@@ -159,12 +161,32 @@ class GrpcOffersService extends OffersImplBase {
                         // This result handling consumer's accept operation will return
                         // the new offer to the gRPC client after async placement is done.
                         OfferInfo offerInfo = toOfferInfo(offer);
+                        offerInfo.setIsMyOffer(true);
                         CreateOfferReply reply = CreateOfferReply.newBuilder()
                                 .setOffer(offerInfo.toProtoMessage())
                                 .build();
                         responseObserver.onNext(reply);
                         responseObserver.onCompleted();
                     });
+        } catch (Throwable cause) {
+            exceptionHandler.handleException(log, cause, responseObserver);
+        }
+    }
+
+    @Override
+    public void editOffer(EditOfferRequest req,
+                          StreamObserver<EditOfferReply> responseObserver) {
+        try {
+            coreApi.editOffer(req.getId(),
+                    req.getPrice(),
+                    req.getUseMarketBasedPrice(),
+                    req.getMarketPriceMargin(),
+                    req.getTriggerPrice(),
+                    req.getEnable(),
+                    req.getEditType());
+            var reply = EditOfferReply.newBuilder().build();
+            responseObserver.onNext(reply);
+            responseObserver.onCompleted();
         } catch (Throwable cause) {
             exceptionHandler.handleException(log, cause, responseObserver);
         }
@@ -198,6 +220,7 @@ class GrpcOffersService extends OffersImplBase {
                             put(getGetOffersMethod().getFullMethodName(), new GrpcCallRateMeter(1, SECONDS));
                             put(getGetMyOffersMethod().getFullMethodName(), new GrpcCallRateMeter(1, SECONDS));
                             put(getCreateOfferMethod().getFullMethodName(), new GrpcCallRateMeter(1, MINUTES));
+                            put(getEditOfferMethod().getFullMethodName(), new GrpcCallRateMeter(1, MINUTES));
                             put(getCancelOfferMethod().getFullMethodName(), new GrpcCallRateMeter(1, MINUTES));
                         }}
                 )));

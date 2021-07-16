@@ -27,6 +27,7 @@ public class OptLabel {
     public final static String OPT_CURRENCY_CODE = "currency-code";
     public final static String OPT_DIRECTION = "direction";
     public final static String OPT_DISPUTE_AGENT_TYPE = "dispute-agent-type";
+    public final static String OPT_ENABLE = "enable";
     public final static String OPT_FEE_CURRENCY = "fee-currency";
     public final static String OPT_FIXED_PRICE = "fixed-price";
     public final static String OPT_HELP = "help";
@@ -47,6 +48,7 @@ public class OptLabel {
     public final static String OPT_TRADE_INSTANT = "trade-instant";
     public final static String OPT_TIMEOUT = "timeout";
     public final static String OPT_TRANSACTION_ID = "transaction-id";
+    public final static String OPT_TRIGGER_PRICE = "trigger-price";
     public final static String OPT_TX_FEE_RATE = "tx-fee-rate";
     public final static String OPT_WALLET_PASSWORD = "wallet-password";
     public final static String OPT_NEW_WALLET_PASSWORD = "new-wallet-password";

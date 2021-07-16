@@ -72,6 +72,8 @@ service Offers {
     }
     rpc CreateOffer (CreateOfferRequest) returns (CreateOfferReply) {
     }
+    rpc EditOffer (EditOfferRequest) returns (EditOfferReply) {
+    }
     rpc CancelOffer (CancelOfferRequest) returns (CancelOfferReply) {
     }
 }
@@ -128,6 +130,35 @@ message CreateOfferReply {
     OfferInfo offer = 1;
 }
 
+message EditOfferRequest {
+    string id = 1;
+    string price = 2;
+    bool useMarketBasedPrice = 3;
+    double marketPriceMargin = 4;
+    uint64 triggerPrice = 5;
+    // Send a signed int, not a bool (with default=false).
+    // -1 = do not change activation state
+    //  0 = disable
+    //  1 = enable
+    sint32 enable = 6;
+    // The EditType constricts what offer details can be modified and simplifies param validation.
+    enum EditType {
+         ACTIVATION_STATE_ONLY = 0;
+         FIXED_PRICE_ONLY = 1;
+         FIXED_PRICE_AND_ACTIVATION_STATE = 2;
+         MKT_PRICE_MARGIN_ONLY = 3;
+         MKT_PRICE_MARGIN_AND_ACTIVATION_STATE = 4;
+         TRIGGER_PRICE_ONLY = 5;
+         TRIGGER_PRICE_AND_ACTIVATION_STATE = 6;
+         MKT_PRICE_MARGIN_AND_TRIGGER_PRICE = 7;
+         MKT_PRICE_MARGIN_AND_TRIGGER_PRICE_AND_ACTIVATION_STATE = 8;
+    }
+    EditType editType = 7;
+}
+
+message EditOfferReply {
+}
+
 message CancelOfferRequest {
     string id = 1;
 }
@@ -159,6 +190,8 @@ message OfferInfo {
     string offerFeePaymentTxId = 21;
     uint64 txFee = 22;
     uint64 makerFee = 23;
+    bool isActivated = 24;
+    bool isMyOffer = 25;
 }
 
 message AvailabilityResultWithDescription {
