@@ -20,9 +20,9 @@ package bisq.desktop.components.paymentmethods;
 import bisq.desktop.components.InputTextField;
 import bisq.desktop.util.FormBuilder;
 import bisq.desktop.util.Layout;
+import bisq.desktop.util.normalization.IBANNormalizer;
 import bisq.desktop.util.validation.BICValidator;
 import bisq.desktop.util.validation.IBANValidator;
-import bisq.desktop.util.normalization.IBANNormalizer;
 
 import bisq.core.account.witness.AccountAgeWitnessService;
 import bisq.core.locale.Country;
@@ -47,6 +47,7 @@ import javafx.scene.layout.GridPane;
 import javafx.collections.FXCollections;
 
 import java.util.List;
+import java.util.Optional;
 
 import static bisq.desktop.util.FormBuilder.addCompactTopLabelTextField;
 import static bisq.desktop.util.FormBuilder.addCompactTopLabelTextFieldWithCopyIcon;
@@ -96,6 +97,8 @@ public class SepaForm extends GeneralSepaForm {
             updateFromInputs();
         });
 
+
+
         ibanInputTextField = FormBuilder.addInputTextField(gridPane, ++gridRow, IBAN);
         ibanInputTextField.setTextFormatter(new TextFormatter<>(new IBANNormalizer()));
         ibanInputTextField.setValidator(ibanValidator);
@@ -104,6 +107,7 @@ public class SepaForm extends GeneralSepaForm {
             updateFromInputs();
 
         });
+
         InputTextField bicInputTextField = FormBuilder.addInputTextField(gridPane, ++gridRow, BIC);
         bicInputTextField.setValidator(bicValidator);
         bicInputTextField.textProperty().addListener((ov, oldValue, newValue) -> {
@@ -111,6 +115,8 @@ public class SepaForm extends GeneralSepaForm {
             updateFromInputs();
 
         });
+
+
 
         ComboBox<Country> countryComboBox = addCountrySelection();
 
@@ -127,6 +133,31 @@ public class SepaForm extends GeneralSepaForm {
             countryComboBox.getSelectionModel().select(country);
             sepaAccount.setCountry(country);
         }
+
+        ibanInputTextField.textProperty().addListener((ov, oldValue, newValue) -> {
+            if (ibanInputTextField.validate()) {
+                List<Country> countries = CountryUtil.getAllSepaCountries();
+                String ibanCountryCode = newValue.substring(0, 2).toUpperCase();
+                Optional<Country> ibanCountry = countries.stream()
+                        .filter(c -> c.code.equals(ibanCountryCode)).findFirst();
+                if (ibanCountry.isPresent())
+                    countryComboBox.setValue(ibanCountry.get());
+            }
+        });
+
+        countryComboBox.valueProperty().addListener((ov, oldValue, newValue) -> {
+            if (ibanInputTextField.validate()) {
+                String ibanCountryCode = ibanInputTextField.getText(0, 2);
+                String comboBoxCountryCode = countryComboBox.getValue().code;
+                if (!ibanCountryCode.equals(comboBoxCountryCode)) {
+                    InputValidator.ValidationResult result = new InputValidator
+                            .ValidationResult(false, "Country code must match country of bank");
+                    ibanInputTextField.validationResultProperty().setValue(result);
+                }
+            }
+        });
+
+
 
         updateFromInputs();
     }
