@@ -356,23 +356,46 @@ public class TradeDataValidation {
     }
 
     public static void validateDepositInputs(Trade trade) throws InvalidTxException {
-        // assumption: deposit tx always has 2 inputs, the maker and taker
-        if (trade == null || trade.getDepositTx() == null || trade.getDepositTx().getInputs().size() != 2) {
-            throw new InvalidTxException("Deposit transaction is null or has unexpected input count");
+        /*
+         * deposit tx usually has 2 inputs, the maker and taker
+         * however, if the maker funds the reserved for trade wallet from
+         * an external wallet, the deposit tx will have more than 2 inputs
+         */
+        if (trade == null || trade.getDepositTx() == null) {
+            throw new InvalidTxException("Deposit transaction is null");
+        }
+        if (trade.getDepositTx().getInputs().size() != 2) {
+            log.warn("Deposit transaction has unusual input count: " + trade.getDepositTx().getInputs().size() + " rather than 2");
         }
         Transaction depositTx = trade.getDepositTx();
-        String txIdInput0 = depositTx.getInput(0).getOutpoint().getHash().toString();
-        String txIdInput1 = depositTx.getInput(1).getOutpoint().getHash().toString();
+        boolean hasFoundMakerTx = false;
+        boolean hasFoundTakerTx = false;
         String contractMakerTxId = trade.getContract().getOfferPayload().getOfferFeePaymentTxId();
         String contractTakerTxId = trade.getContract().getTakerFeeTxID();
-        boolean makerFirstMatch = contractMakerTxId.equalsIgnoreCase(txIdInput0) && contractTakerTxId.equalsIgnoreCase(txIdInput1);
-        boolean takerFirstMatch = contractMakerTxId.equalsIgnoreCase(txIdInput1) && contractTakerTxId.equalsIgnoreCase(txIdInput0);
-        if (!makerFirstMatch && !takerFirstMatch) {
-            String errMsg = "Maker/Taker txId in contract does not match deposit tx input";
-            log.error(errMsg +
-                "\nContract Maker tx=" + contractMakerTxId + " Contract Taker tx=" + contractTakerTxId +
-                "\nDeposit Input0=" + txIdInput0 + " Deposit Input1=" + txIdInput1);
-            throw new InvalidTxException(errMsg);
+        for (TransactionInput input : depositTx.getInputs()) {
+            if (contractMakerTxId.equalsIgnoreCase(input.getOutpoint().getHash().toString())) {
+                hasFoundMakerTx = true;
+            } else if (contractTakerTxId.equalsIgnoreCase(input.getOutpoint().getHash().toString())) {
+                hasFoundTakerTx = true;
+            }
+            if (hasFoundMakerTx && hasFoundTakerTx) {
+                break;
+            }
+        }
+        if (!hasFoundMakerTx || !hasFoundTakerTx) {
+            String errMsg = "For trade with id " + trade.getId() + ":\n";
+            if (!hasFoundMakerTx) {
+                errMsg = errMsg + "Maker txId in contract does not match any deposit tx input" +
+                        "\nContract Maker tx=" + contractMakerTxId;
+            }
+            if (!hasFoundTakerTx) {
+                errMsg = errMsg + "Taker txId in contract does not match any deposit tx input" +
+                        "\nContract Taker tx=" + contractTakerTxId;
+            }
+            for (int index = 0; index < depositTx.getInputs().size(); index++) {
+                errMsg = errMsg + "\nDeposit Input" + index + "=" + depositTx.getInput(index).getOutpoint().getHash().toString();
+            }
+            log.warn(errMsg);
         }
     }
 
