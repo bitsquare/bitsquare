@@ -134,7 +134,8 @@ public class BotClient {
                                                    long minAmountInSatoshis,
                                                    double priceMarginAsPercent,
                                                    double securityDepositAsPercent,
-                                                   String feeCurrency) {
+                                                   String feeCurrency,
+                                                   long triggerPrice) {
         return grpcClient.createMarketBasedPricedOffer(direction,
                 currencyCode,
                 amountInSatoshis,
@@ -142,7 +143,8 @@ public class BotClient {
                 priceMarginAsPercent,
                 securityDepositAsPercent,
                 paymentAccount.getId(),
-                feeCurrency);
+                feeCurrency,
+                triggerPrice);
     }
 
     /**

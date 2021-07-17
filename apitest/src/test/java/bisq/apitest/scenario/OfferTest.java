@@ -32,6 +32,7 @@ import bisq.apitest.method.offer.CancelOfferTest;
 import bisq.apitest.method.offer.CreateBSQOffersTest;
 import bisq.apitest.method.offer.CreateOfferUsingFixedPriceTest;
 import bisq.apitest.method.offer.CreateOfferUsingMarketPriceMarginTest;
+import bisq.apitest.method.offer.EditOfferTest;
 import bisq.apitest.method.offer.ValidateCreateOfferTest;
 
 @Slf4j
@@ -71,11 +72,12 @@ public class OfferTest extends AbstractOfferTest {
         test.testCreateNZDBTCBuyOfferMinus2PctPriceMargin();
         test.testCreateGBPBTCSellOfferMinus1Point5PctPriceMargin();
         test.testCreateBRLBTCSellOffer6Point55PctPriceMargin();
+        test.testCreateUSDBTCBuyOfferWithTriggerPrice();
     }
 
     @Test
     @Order(5)
-    public void testCreateBSQOffersTest() {
+    public void testCreateBSQOffers() {
         CreateBSQOffersTest test = new CreateBSQOffersTest();
         CreateBSQOffersTest.createBsqPaymentAccounts();
         test.testCreateBuy1BTCFor20KBSQOffer();
@@ -84,5 +86,31 @@ public class OfferTest extends AbstractOfferTest {
         test.testCreateSellBTCFor5To10KBSQOffer();
         test.testGetAllMyBsqOffers();
         test.testGetAvailableBsqOffers();
+    }
+
+    @Test
+    @Order(6)
+    public void testEditOffer() {
+        EditOfferTest test = new EditOfferTest();
+        // Edit fiat offer tests
+        test.testOfferDisableAndEnable();
+        test.testEditTriggerPrice();
+        test.testSetTriggerPriceToNegativeValueShouldThrowException();
+        test.testEditMktPriceMargin();
+        test.testEditFixedPrice();
+        test.testEditFixedPriceAndDeactivation();
+        test.testEditMktPriceMarginAndDeactivation();
+        test.testEditMktPriceMarginAndTriggerPriceAndDeactivation();
+        test.testEditingFixedPriceInMktPriceMarginBasedOfferShouldThrowException();
+        test.testEditingTriggerPriceInFixedPriceOfferShouldThrowException();
+        test.testChangeFixedPriceOfferToPriceMarginBasedOfferWithTriggerPrice();
+        test.testChangePriceMarginBasedOfferToFixedPriceOfferAndDeactivateIt();
+        test.testChangeFixedPriceOfferToPriceMarginBasedOfferWithTriggerPrice();
+        // Edit bsq offer tests
+        test.testChangeFixedPricedBsqOfferToPriceMarginBasedOfferShouldThrowException();
+        test.testEditTriggerPriceOnFixedPriceBsqOfferShouldThrowException();
+        test.testEditFixedPriceOnBsqOffer();
+        test.testDisableBsqOffer();
+        test.testEditFixedPriceAndDisableBsqOffer();
     }
 }

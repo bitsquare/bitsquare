@@ -92,11 +92,11 @@ public class TradeInfo implements Payload {
         this.contract = builder.contract;
     }
 
-    public static TradeInfo toTradeInfo(Trade trade) {
-        return toTradeInfo(trade, null);
+    public static TradeInfo toNewTradeInfo(Trade trade) {
+        return toTradeInfo(trade, null, false);
     }
 
-    public static TradeInfo toTradeInfo(Trade trade, String role) {
+    public static TradeInfo toTradeInfo(Trade trade, String role, boolean isMyOffer) {
         ContractInfo contractInfo;
         if (trade.getContract() != null) {
             Contract contract = trade.getContract();
@@ -116,8 +116,10 @@ public class TradeInfo implements Payload {
             contractInfo = ContractInfo.emptyContract.get();
         }
 
+        OfferInfo offerInfo = toOfferInfo(trade.getOffer());
+        offerInfo.setIsMyOffer(isMyOffer);
         return new TradeInfoBuilder()
-                .withOffer(toOfferInfo(trade.getOffer()))
+                .withOffer(offerInfo)
                 .withTradeId(trade.getId())
                 .withShortId(trade.getShortId())
                 .withDate(trade.getDate().getTime())

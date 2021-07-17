@@ -44,6 +44,7 @@ import java.util.Optional;
 
 import lombok.extern.slf4j.Slf4j;
 
+import static bisq.core.api.model.TradeInfo.toNewTradeInfo;
 import static bisq.core.api.model.TradeInfo.toTradeInfo;
 import static bisq.daemon.grpc.interceptor.GrpcServiceRateMeteringConfig.getCustomRateMeteringInterceptor;
 import static bisq.proto.grpc.TradesGrpc.*;
@@ -72,9 +73,10 @@ class GrpcTradesService extends TradesImplBase {
                          StreamObserver<GetTradeReply> responseObserver) {
         try {
             Trade trade = coreApi.getTrade(req.getTradeId());
+            boolean isMyOffer = coreApi.isMyOffer(trade.getOffer().getId());
             String role = coreApi.getTradeRole(req.getTradeId());
             var reply = GetTradeReply.newBuilder()
-                    .setTrade(toTradeInfo(trade, role).toProtoMessage())
+                    .setTrade(toTradeInfo(trade, role, isMyOffer).toProtoMessage())
                     .build();
             responseObserver.onNext(reply);
             responseObserver.onCompleted();
@@ -99,7 +101,7 @@ class GrpcTradesService extends TradesImplBase {
                 req.getPaymentAccountId(),
                 req.getTakerFeeCurrencyCode(),
                 trade -> {
-                    TradeInfo tradeInfo = toTradeInfo(trade);
+                    TradeInfo tradeInfo = toNewTradeInfo(trade);
                     var reply = TakeOfferReply.newBuilder()
                             .setTrade(tradeInfo.toProtoMessage())
                             .build();
