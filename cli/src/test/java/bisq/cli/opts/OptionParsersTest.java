@@ -1,4 +1,4 @@
-package bisq.cli.opt;
+package bisq.cli.opts;
 
 import org.junit.jupiter.api.Test;
 
@@ -9,13 +9,6 @@ import static bisq.cli.Method.createpaymentacct;
 import static bisq.cli.opts.OptLabel.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-
-
-
-import bisq.cli.opts.CancelOfferOptionParser;
-import bisq.cli.opts.CreateCryptoCurrencyPaymentAcctOptionParser;
-import bisq.cli.opts.CreateOfferOptionParser;
-import bisq.cli.opts.CreatePaymentAcctOptionParser;
 
 
 public class OptionParsersTest {
@@ -178,7 +171,7 @@ public class OptionParsersTest {
                 new CreatePaymentAcctOptionParser(args).parse());
         if (System.getProperty("os.name").toLowerCase().indexOf("win") >= 0)
             assertEquals("json payment account form '\\tmp\\milkyway\\solarsystem\\mars' could not be found",
-                exception.getMessage());
+                    exception.getMessage());
         else
             assertEquals("json payment account form '/tmp/milkyway/solarsystem/mars' could not be found",
                     exception.getMessage());

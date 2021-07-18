@@ -35,7 +35,11 @@ import static java.math.RoundingMode.UNNECESSARY;
 @VisibleForTesting
 public class CurrencyFormat {
 
-    private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance(Locale.US);
+    // Formats numbers in US locale, human friendly style.
+    private static final NumberFormat FRIENDLY_NUMBER_FORMAT = NumberFormat.getInstance(Locale.US);
+
+    // Formats numbers for internal use, i.e., grpc request parameters.
+    private static final DecimalFormat INTERNAL_FIAT_DECIMAL_FORMAT = new DecimalFormat("##############0.0000");
 
     static final BigDecimal SATOSHI_DIVISOR = new BigDecimal(100_000_000);
     static final DecimalFormat BTC_FORMAT = new DecimalFormat("###,##0.00000000");
@@ -59,9 +63,9 @@ public class CurrencyFormat {
 
     public static String formatBsqAmount(long bsqSats) {
         // BSQ sats = trade.getOffer().getVolume()
-        NUMBER_FORMAT.setMinimumFractionDigits(2);
-        NUMBER_FORMAT.setMaximumFractionDigits(2);
-        NUMBER_FORMAT.setRoundingMode(HALF_UP);
+        FRIENDLY_NUMBER_FORMAT.setMinimumFractionDigits(2);
+        FRIENDLY_NUMBER_FORMAT.setMaximumFractionDigits(2);
+        FRIENDLY_NUMBER_FORMAT.setRoundingMode(HALF_UP);
         return SEND_BSQ_FORMAT.format((double) bsqSats / SATOSHI_DIVISOR.doubleValue());
     }
 
@@ -95,38 +99,48 @@ public class CurrencyFormat {
                 : formatCryptoCurrencyOfferVolume(volume);
     }
 
-    public static String formatMarketPrice(double price) {
-        NUMBER_FORMAT.setMinimumFractionDigits(4);
-        NUMBER_FORMAT.setMaximumFractionDigits(4);
-        return NUMBER_FORMAT.format(price);
+    public static String formatInternalFiatPrice(BigDecimal price) {
+        INTERNAL_FIAT_DECIMAL_FORMAT.setMinimumFractionDigits(4);
+        INTERNAL_FIAT_DECIMAL_FORMAT.setMaximumFractionDigits(4);
+        return INTERNAL_FIAT_DECIMAL_FORMAT.format(price);
+    }
+
+    public static String formatInternalFiatPrice(double price) {
+        FRIENDLY_NUMBER_FORMAT.setMinimumFractionDigits(4);
+        FRIENDLY_NUMBER_FORMAT.setMaximumFractionDigits(4);
+        return FRIENDLY_NUMBER_FORMAT.format(price);
     }
 
     public static String formatPrice(long price) {
-        NUMBER_FORMAT.setMinimumFractionDigits(4);
-        NUMBER_FORMAT.setMaximumFractionDigits(4);
-        NUMBER_FORMAT.setRoundingMode(UNNECESSARY);
-        return NUMBER_FORMAT.format((double) price / 10_000);
+        FRIENDLY_NUMBER_FORMAT.setMinimumFractionDigits(4);
+        FRIENDLY_NUMBER_FORMAT.setMaximumFractionDigits(4);
+        FRIENDLY_NUMBER_FORMAT.setRoundingMode(UNNECESSARY);
+        return FRIENDLY_NUMBER_FORMAT.format((double) price / 10_000);
     }
 
     public static String formatCryptoCurrencyPrice(long price) {
-        NUMBER_FORMAT.setMinimumFractionDigits(8);
-        NUMBER_FORMAT.setMaximumFractionDigits(8);
-        NUMBER_FORMAT.setRoundingMode(UNNECESSARY);
-        return NUMBER_FORMAT.format((double) price / SATOSHI_DIVISOR.doubleValue());
+        FRIENDLY_NUMBER_FORMAT.setMinimumFractionDigits(8);
+        FRIENDLY_NUMBER_FORMAT.setMaximumFractionDigits(8);
+        FRIENDLY_NUMBER_FORMAT.setRoundingMode(UNNECESSARY);
+        return FRIENDLY_NUMBER_FORMAT.format((double) price / SATOSHI_DIVISOR.doubleValue());
     }
 
     public static String formatOfferVolume(long volume) {
-        NUMBER_FORMAT.setMinimumFractionDigits(0);
-        NUMBER_FORMAT.setMaximumFractionDigits(0);
-        NUMBER_FORMAT.setRoundingMode(HALF_UP);
-        return NUMBER_FORMAT.format((double) volume / 10_000);
+        FRIENDLY_NUMBER_FORMAT.setMinimumFractionDigits(0);
+        FRIENDLY_NUMBER_FORMAT.setMaximumFractionDigits(0);
+        FRIENDLY_NUMBER_FORMAT.setRoundingMode(HALF_UP);
+        return FRIENDLY_NUMBER_FORMAT.format((double) volume / 10_000);
     }
 
     public static String formatCryptoCurrencyOfferVolume(long volume) {
-        NUMBER_FORMAT.setMinimumFractionDigits(2);
-        NUMBER_FORMAT.setMaximumFractionDigits(2);
-        NUMBER_FORMAT.setRoundingMode(HALF_UP);
-        return NUMBER_FORMAT.format((double) volume / SATOSHI_DIVISOR.doubleValue());
+        FRIENDLY_NUMBER_FORMAT.setMinimumFractionDigits(2);
+        FRIENDLY_NUMBER_FORMAT.setMaximumFractionDigits(2);
+        FRIENDLY_NUMBER_FORMAT.setRoundingMode(HALF_UP);
+        return FRIENDLY_NUMBER_FORMAT.format((double) volume / SATOSHI_DIVISOR.doubleValue());
+    }
+
+    public static long toInternalFiatPrice(BigDecimal humanFriendlyFiatPrice) {
+        return humanFriendlyFiatPrice.multiply(new BigDecimal(10_000)).longValue();
     }
 
     public static long toSatoshis(String btc) {

@@ -1,0 +1,95 @@
+editoffer
+
+NAME
+----
+editoffer - edit an existing offer to buy or sell BTC
+
+SYNOPSIS
+--------
+editoffer
+		--offer-id=<offer-id>
+		[--market-price-margin=<percent>]
+		[--trigger-price=<btc-price>]
+		[--fixed-price=<btc-price>]
+		[--enabled=<true|false>]
+
+DESCRIPTION
+-----------
+Edit an existing offer.  Offers can be changed in the following ways:
+
+        Change a fixed-price offer to a market-price-margin based offer.
+        Change a market-price-margin based offer to a fixed-price offer.
+        Change a market-price-margin.
+        Change a fixed-price.
+        Define, change, or remove a market-price-margin based offer's trigger price.
+        Disable an enabled offer.
+        Enable a disabled offer.
+
+OPTIONS
+-------
+--offer-id
+        The ID of the buy or sell offer to edit.
+
+--market-price-margin
+        Changes the % above or below market BTC price, e.g., 1.00 (1%).
+        A --fixed-price offer can be changed to a --market-price-margin offer with this option.
+        The --market-price-margin and --trigger-price options can be used in the same editoffer command.
+        The --market-price-margin and --fixed-price options cannot be used in the same editoffer command.
+
+--fixed-price
+        Changes the fixed BTC price in fiat used to buy or sell BTC, e.g., 34000 (USD).
+        A --market-price-margin offer can be changed to a --fixed-price offer with this option.
+        The --fixed-price and --market-price-margin options cannot be used in the same editoffer command.
+
+--trigger-price
+        Sets the market price for triggering the de-activation of an offer, or defines trigger-price on an
+        offer that did not have a trigger-price when it was created.
+        A buy BTC offer is de-activated when the market price rises above the trigger-price.
+        A sell BTC offer is de-activated when the market price falls below the trigger-price.
+        Only applies to market-price-margin based offers;  a fixed-price offer's trigger-price is ignored.
+        The --fixed-price and --trigger-price options cannot be used in the same editoffer command.
+
+--enabled
+        If true, enables a disabled offer.  Does nothing if offer is already enabled.
+        If false, disabled an enabled offer.  Does nothing if offer is already disabled.
+
+EXAMPLES
+--------
+
+To change a fixed-price offer with ID 83e8b2e2-51b6-4f39-a748-3ebd29c22aea
+    to a 0.10% market-price-margin based offer:
+$ ./bisq-cli --password=xyz --port=9998 editoffer --offer-id=83e8b2e2-51b6-4f39-a748-3ebd29c22aea \
+    --market-price-margin=0.10
+
+To change a market-price-margin based offer with ID 83e8b2e2-51b6-4f39-a748-3ebd29c22aea
+    to a fixed-price offer:
+$ ./bisq-cli --password=xyz --port=9998 editoffer --offer-id=83e8b2e2-51b6-4f39-a748-3ebd29c22aea \
+    --fixed-price=50000.0000
+
+To set or change the trigger-price on a market-price-margin
+    based offer with ID 83e8b2e2-51b6-4f39-a748-3ebd29c22aea:
+$ ./bisq-cli --password=xyz --port=9998 editoffer --offer-id=83e8b2e2-51b6-4f39-a748-3ebd29c22aea \
+    --trigger-price=50000.0000
+
+To remove a trigger-price on a market-price-margin
+    based offer with ID 83e8b2e2-51b6-4f39-a748-3ebd29c22aea:
+$ ./bisq-cli --password=xyz --port=9998 editoffer --offer-id=83e8b2e2-51b6-4f39-a748-3ebd29c22aea \
+    --trigger-price=0
+
+To change the market-price-margin and trigger-price on an
+    offer with ID 83e8b2e2-51b6-4f39-a748-3ebd29c22aea:
+$ ./bisq-cli --password=xyz --port=9998 editoffer --offer-id=83e8b2e2-51b6-4f39-a748-3ebd29c22aea \
+    --market-price-margin=0.05 \
+    --trigger-price=50000.0000
+
+To disable an offer with ID 83e8b2e2-51b6-4f39-a748-3ebd29c22aea:
+$ ./bisq-cli --password=xyz --port=9998 editoffer --offer-id=83e8b2e2-51b6-4f39-a748-3ebd29c22aea \
+    --enable=false
+
+To enable a disabled offer with ID 83e8b2e2-51b6-4f39-a748-3ebd29c22aea,
+    and change it from a fixed-price offer to a 0.50% market-price-margin based offer,
+    and set the trigger-price to 50000.0000:
+$ ./bisq-cli --password=xyz --port=9998 editoffer --offer-id=83e8b2e2-51b6-4f39-a748-3ebd29c22aea \
+    --market-price-margin=0.50 \
+    --trigger-price=50000.0000 \
+    --enable=true

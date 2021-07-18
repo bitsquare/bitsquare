@@ -28,6 +28,7 @@ import bisq.core.btc.wallet.Restrictions;
 import bisq.core.locale.CurrencyUtil;
 import bisq.core.locale.TradeCurrency;
 import bisq.core.offer.CreateOfferService;
+import bisq.core.offer.MutableOfferPayloadFields;
 import bisq.core.offer.Offer;
 import bisq.core.offer.OfferPayload;
 import bisq.core.offer.OfferUtil;
@@ -182,54 +183,12 @@ class EditOfferDataModel extends MutableOfferDataModel {
     }
 
     public void onPublishOffer(ResultHandler resultHandler, ErrorMessageHandler errorMessageHandler) {
-        // editedPayload is a merge of the original offerPayload and newOfferPayload
-        // fields which are editable are merged in from newOfferPayload (such as payment account details)
-        // fields which cannot change (most importantly BTC amount) are sourced from the original offerPayload
-        final OfferPayload offerPayload = openOffer.getOffer().getOfferPayload();
-        final OfferPayload newOfferPayload = createAndGetOffer().getOfferPayload();
-        final OfferPayload editedPayload = new OfferPayload(offerPayload.getId(),
-                offerPayload.getDate(),
-                offerPayload.getOwnerNodeAddress(),
-                offerPayload.getPubKeyRing(),
-                offerPayload.getDirection(),
-                newOfferPayload.getPrice(),
-                newOfferPayload.getMarketPriceMargin(),
-                newOfferPayload.isUseMarketBasedPrice(),
-                offerPayload.getAmount(),
-                offerPayload.getMinAmount(),
-                newOfferPayload.getBaseCurrencyCode(),
-                newOfferPayload.getCounterCurrencyCode(),
-                offerPayload.getArbitratorNodeAddresses(),
-                offerPayload.getMediatorNodeAddresses(),
-                newOfferPayload.getPaymentMethodId(),
-                newOfferPayload.getMakerPaymentAccountId(),
-                offerPayload.getOfferFeePaymentTxId(),
-                newOfferPayload.getCountryCode(),
-                newOfferPayload.getAcceptedCountryCodes(),
-                newOfferPayload.getBankId(),
-                newOfferPayload.getAcceptedBankIds(),
-                offerPayload.getVersionNr(),
-                offerPayload.getBlockHeightAtOfferCreation(),
-                offerPayload.getTxFee(),
-                offerPayload.getMakerFee(),
-                offerPayload.isCurrencyForMakerFeeBtc(),
-                offerPayload.getBuyerSecurityDeposit(),
-                offerPayload.getSellerSecurityDeposit(),
-                offerPayload.getMaxTradeLimit(),
-                offerPayload.getMaxTradePeriod(),
-                offerPayload.isUseAutoClose(),
-                offerPayload.isUseReOpenAfterAutoClose(),
-                offerPayload.getLowerClosePrice(),
-                offerPayload.getUpperClosePrice(),
-                offerPayload.isPrivateOffer(),
-                offerPayload.getHashOfChallenge(),
-                offerPayload.getExtraDataMap(),
-                offerPayload.getProtocolVersion());
-
+        MutableOfferPayloadFields mutableOfferPayloadFields =
+                new MutableOfferPayloadFields(createAndGetOffer().getOfferPayload());
+        final OfferPayload editedPayload = offerUtil.getMergedOfferPayload(openOffer, mutableOfferPayloadFields);
         final Offer editedOffer = new Offer(editedPayload);
         editedOffer.setPriceFeedService(priceFeedService);
         editedOffer.setState(Offer.State.AVAILABLE);
-
         openOfferManager.editOpenOfferPublish(editedOffer, triggerPrice, initialState, () -> {
             openOffer = null;
             resultHandler.handleResult();

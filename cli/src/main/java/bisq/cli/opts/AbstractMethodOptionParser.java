@@ -24,6 +24,7 @@ import joptsimple.OptionSpec;
 
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import lombok.Getter;
 
@@ -63,6 +64,9 @@ abstract class AbstractMethodOptionParser implements MethodOpts {
     public boolean isForHelp() {
         return options.has(helpOpt);
     }
+
+    protected final Predicate<OptionSpec<String>> valueNotSpecified = (opt) ->
+            !options.hasArgument(opt) || options.valueOf(opt).isEmpty();
 
     private final Function<OptionException, String> cliExceptionMessageStyle = (ex) -> {
         if (ex.getMessage() == null)

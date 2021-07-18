@@ -21,9 +21,7 @@ import bisq.core.api.model.AddressBalanceInfo;
 import bisq.core.api.model.BalancesInfo;
 import bisq.core.api.model.TxFeeRateInfo;
 import bisq.core.btc.wallet.TxBroadcaster;
-import bisq.core.monetary.Price;
 import bisq.core.offer.Offer;
-import bisq.core.offer.OfferPayload;
 import bisq.core.offer.OpenOffer;
 import bisq.core.payment.PaymentAccount;
 import bisq.core.payment.payload.PaymentMethod;
@@ -36,7 +34,6 @@ import bisq.common.config.Config;
 import bisq.common.handlers.ErrorMessageHandler;
 import bisq.common.handlers.ResultHandler;
 
-import org.bitcoinj.core.Coin;
 import org.bitcoinj.core.Transaction;
 
 import javax.inject.Inject;
@@ -51,6 +48,8 @@ import java.util.function.Consumer;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+
+import static bisq.proto.grpc.EditOfferRequest.EditType;
 
 /**
  * Provides high level interface to functionality of core Bisq features.
@@ -122,7 +121,7 @@ public class CoreApi {
         return coreOffersService.getOffer(id);
     }
 
-    public Offer getMyOffer(String id) {
+    public OpenOffer getMyOffer(String id) {
         return coreOffersService.getMyOffer(id);
     }
 
@@ -130,12 +129,8 @@ public class CoreApi {
         return coreOffersService.getOffers(direction, currencyCode);
     }
 
-    public List<Offer> getMyOffers(String direction, String currencyCode) {
+    public List<OpenOffer> getMyOffers(String direction, String currencyCode) {
         return coreOffersService.getMyOffers(direction, currencyCode);
-    }
-
-    public OpenOffer getMyOpenOffer(String id) {
-        return coreOffersService.getMyOpenOffer(id);
     }
 
     public void createAnPlaceOffer(String currencyCode,
@@ -164,26 +159,20 @@ public class CoreApi {
                 resultHandler);
     }
 
-    public Offer editOffer(String offerId,
-                           String currencyCode,
-                           OfferPayload.Direction direction,
-                           Price price,
-                           boolean useMarketBasedPrice,
-                           double marketPriceMargin,
-                           Coin amount,
-                           Coin minAmount,
-                           double buyerSecurityDeposit,
-                           PaymentAccount paymentAccount) {
-        return coreOffersService.editOffer(offerId,
-                currencyCode,
-                direction,
-                price,
+    public void editOffer(String offerId,
+                          String priceAsString,
+                          boolean useMarketBasedPrice,
+                          double marketPriceMargin,
+                          long triggerPrice,
+                          int enable,
+                          EditType editType) {
+        coreOffersService.editOffer(offerId,
+                priceAsString,
                 useMarketBasedPrice,
                 marketPriceMargin,
-                amount,
-                minAmount,
-                buyerSecurityDeposit,
-                paymentAccount);
+                triggerPrice,
+                enable,
+                editType);
     }
 
     public void cancelOffer(String id) {

@@ -17,13 +17,12 @@
 
 package bisq.apitest.method.offer;
 
-import bisq.core.monetary.Altcoin;
-
 import protobuf.PaymentAccount;
 
-import org.bitcoinj.utils.Fiat;
-
 import java.math.BigDecimal;
+
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -37,10 +36,7 @@ import static bisq.apitest.config.BisqAppConfig.alicedaemon;
 import static bisq.apitest.config.BisqAppConfig.arbdaemon;
 import static bisq.apitest.config.BisqAppConfig.bobdaemon;
 import static bisq.apitest.config.BisqAppConfig.seednode;
-import static bisq.common.util.MathUtils.roundDouble;
-import static bisq.common.util.MathUtils.scaleDownByPowerOf10;
-import static bisq.core.locale.CurrencyUtil.isCryptoCurrency;
-import static java.math.RoundingMode.HALF_UP;
+import static bisq.common.util.MathUtils.exactMultiply;
 
 
 
@@ -48,6 +44,10 @@ import bisq.apitest.method.MethodTest;
 
 @Slf4j
 public abstract class AbstractOfferTest extends MethodTest {
+
+    protected static final int ACTIVATE_OFFER = 1;
+    protected static final int DEACTIVATE_OFFER = 0;
+    protected static final long NO_TRIGGER_PRICE = 0;
 
     @Setter
     protected static boolean isLongRunningTest;
@@ -58,7 +58,7 @@ public abstract class AbstractOfferTest extends MethodTest {
     @BeforeAll
     public static void setUp() {
         startSupportingApps(true,
-                false,
+                true,
                 bitcoind,
                 seednode,
                 arbdaemon,
@@ -66,6 +66,27 @@ public abstract class AbstractOfferTest extends MethodTest {
                 bobdaemon);
     }
 
+
+    // Mkt Price Margin value of offer returned from server is scaled down by 10^-2.
+    protected final Function<Double, Double> scaledDownMktPriceMargin = (mktPriceMargin) ->
+            exactMultiply(mktPriceMargin, 0.01);
+
+    // Price value of offer returned from server is scaled up by 10^4.
+    protected final Function<BigDecimal, Long> scaledUpFiatPrice = (price) -> {
+        BigDecimal factor = new BigDecimal(10).pow(4);
+        return price.multiply(factor).longValue();
+    };
+
+    protected final BiFunction<Double, Double, Long> calcTriggerPriceAsLong = (base, delta) -> {
+        var triggerPriceAsDouble = new BigDecimal(base).add(new BigDecimal(delta)).doubleValue();
+        return Double.valueOf(exactMultiply(triggerPriceAsDouble, 10_000)).longValue();
+    };
+
+    protected final BiFunction<Double, Double, String> calcFixedPriceAsString = (base, delta) -> {
+        var fixedPriceAsBigDecimal = new BigDecimal(Double.toString(base))
+                .add(new BigDecimal(Double.toString(delta)));
+        return fixedPriceAsBigDecimal.toPlainString();
+    };
 
     public static void createBsqPaymentAccounts() {
         alicesBsqAcct = aliceClient.createCryptoCurrencyPaymentAccount("Alice's BSQ Account",
@@ -76,17 +97,6 @@ public abstract class AbstractOfferTest extends MethodTest {
                 BSQ,
                 bobClient.getUnusedBsqAddress(),
                 false);
-    }
-
-    protected double getScaledOfferPrice(double offerPrice, String currencyCode) {
-        int precision = isCryptoCurrency(currencyCode) ? Altcoin.SMALLEST_UNIT_EXPONENT : Fiat.SMALLEST_UNIT_EXPONENT;
-        return scaleDownByPowerOf10(offerPrice, precision);
-    }
-
-    protected final double getPercentageDifference(double price1, double price2) {
-        return BigDecimal.valueOf(roundDouble((1 - (price1 / price2)), 5))
-                .setScale(4, HALF_UP)
-                .doubleValue();
     }
 
     @AfterAll

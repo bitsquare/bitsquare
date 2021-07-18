@@ -33,7 +33,7 @@ import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import static bisq.cli.CurrencyFormat.formatMarketPrice;
+import static bisq.cli.CurrencyFormat.formatInternalFiatPrice;
 import static bisq.cli.CurrencyFormat.formatSatoshis;
 import static bisq.common.util.MathUtils.scaleDownByPowerOf10;
 import static bisq.core.btc.wallet.Restrictions.getDefaultBuyerSecurityDepositAsPercent;
@@ -128,7 +128,8 @@ public class RandomOffer {
                         minAmount,
                         priceMargin,
                         getDefaultBuyerSecurityDepositAsPercent(),
-                        feeCurrency);
+                        feeCurrency,
+                        0 /*no trigger price*/);
             } else {
                 this.offer = botClient.createOfferAtFixedPrice(paymentAccount,
                         direction,
@@ -167,11 +168,11 @@ public class RandomOffer {
         log.info(description);
         if (useMarketBasedPrice) {
             log.info("Offer Price Margin = {}%", priceMargin);
-            log.info("Expected Offer Price = {} {}", formatMarketPrice(Double.parseDouble(fixedOfferPrice)), currencyCode);
+            log.info("Expected Offer Price = {} {}", formatInternalFiatPrice(Double.parseDouble(fixedOfferPrice)), currencyCode);
         } else {
 
             log.info("Fixed Offer Price    = {} {}", fixedOfferPrice, currencyCode);
         }
-        log.info("Current Market Price = {} {}", formatMarketPrice(currentMarketPrice), currencyCode);
+        log.info("Current Market Price = {} {}", formatInternalFiatPrice(currentMarketPrice), currencyCode);
     }
 }
