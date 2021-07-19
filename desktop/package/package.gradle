@@ -231,7 +231,11 @@ task packageInstallers {
                         " --main-jar ${mainJarName}" +
                         " --main-class bisq.desktop.app.BisqAppMain" +
                         " --java-options -Xss1280k" +
-                        " --java-options -XX:MaxRAM=4g" +
+                        " --java-options -XX:MaxRAM=6g" +
+                        " --java-options -XX:+UseG1GC" +
+                        " --java-options -XX:MaxHeapFreeRatio=10" +
+                        " --java-options -XX:MinHeapFreeRatio=5" +
+                        " --java-options -XX:+UseStringDeduplication" +
                         " --java-options -Djava.net.preferIPv4Stack=true"
                 // Warning: this will cause guice reflection exceptions and lead to issues with the guice internal cache
                 // resulting in the UI not loading
