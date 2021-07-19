@@ -75,7 +75,8 @@ public class TakeSellBTCOfferTest extends AbstractTradeTest {
                     0.00,
                     getDefaultBuyerSecurityDepositAsPercent(),
                     alicesUsdAccount.getId(),
-                    TRADE_FEE_CURRENCY_CODE);
+                    TRADE_FEE_CURRENCY_CODE,
+                    NO_TRIGGER_PRICE);
             var offerId = alicesOffer.getId();
             assertTrue(alicesOffer.getIsCurrencyForMakerFeeBtc());
 

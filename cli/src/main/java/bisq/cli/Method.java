@@ -25,6 +25,7 @@ public enum Method {
     confirmpaymentreceived,
     confirmpaymentstarted,
     createoffer,
+    editoffer,
     createpaymentacct,
     createcryptopaymentacct,
     getaddressbalance,

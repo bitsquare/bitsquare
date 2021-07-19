@@ -120,7 +120,16 @@ public class OfferBook {
         Optional<OfferBookListItem> candidateToRemove = offerBookListItems.stream()
                 .filter(item -> item.getOffer().getId().equals(offer.getId()))
                 .findAny();
-        candidateToRemove.ifPresent(offerBookListItems::remove);
+        candidateToRemove.ifPresent((item) -> {
+            offerBookListItems.remove(item);
+            // When the API is used to edit an offer, the daemon's P2PDataStorage will
+            // send onRemoved(offer) and onAdded(offer) events 1-3 ms apart, and those
+            // events may arrive at a peer's UI in the wrong order (onAdded, onRemoved),
+            // resulting in an edited offer disappearing from the UI's OfferBook.
+            // Reloading the offerBookListItems works around the problem.  Reloading
+            // 100 offers usually takes less then 1 ms.
+            fillOfferBookListItems();
+        });
     }
 
     public ObservableList<OfferBookListItem> getOfferBookListItems() {

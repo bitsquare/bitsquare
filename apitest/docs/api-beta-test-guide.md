@@ -408,8 +408,118 @@ The offer will be removed from other Bisq users' offer views, and paid transacti
 
 ### Editing an Existing Offer
 
-Editing existing offers is not yet supported.  You can cancel and re-create an offer, but paid transaction fees
-for the canceled offer will be forfeited.
+Offers you create can be edited in various ways:
+
+- Disable or re-enable an offer.
+- Change an offer's price model and disable (or re-enable) it.
+- Change a market price margin based offer to a fixed price offer.
+- Change a market price margin based offer's price margin.
+- Change, set, or remove a trigger price on a market price margin based offer.
+- Change a market price margin based offer's price margin and trigger price.
+- Change a market price margin based offer's price margin and remove its trigger price.
+- Change a fixed price offer to a market price margin based offer.
+- Change a fixed price offer's fixed price.
+
+_Note: the API does not support editing an offer's payment account._
+
+The subsections below contain examples related to specific use cases.
+
+#### Enable and Disable Offer
+
+Existing offers you create can be disabled (removed from offer book) and re-enabled (re-published to offer book).
+
+To disable an offer:
+```
+./bisq-cli --password=xyz --port=9998 editoffer \
+    --offer-id=83e8b2e2-51b6-4f39-a748-3ebd29c22aea \
+    --enable=false
+```
+
+To enable an offer:
+```
+./bisq-cli --password=xyz --port=9998 editoffer \
+    --offer-id=83e8b2e2-51b6-4f39-a748-3ebd29c22aea \
+    --enable=true
+```
+
+#### Change Offer Pricing Model
+The `editoffer` command can be used to change an existing market price margin based offer to a fixed price offer,
+and vice-versa.
+
+##### Change Market Price Margin Based to Fixed Price Offer
+Suppose you used `createoffer` to create a market price margin based offer as follows:
+```
+$ ./bisq-cli --password=xyz --port=9998 createoffer \
+    --payment-account=f3c1ec8b-9761-458d-b13d-9039c6892413 \
+    --direction=SELL \
+    --currency-code=JPY \
+    --amount=0.125 \
+    --market-price-margin=0.5 \
+    --security-deposit=15.0 \
+    --fee-currency=BSQ
+```
+To change the market price margin based offer to a fixed price offer:
+```
+./bisq-cli --password=xyz --port=9998 editoffer \
+    --offer-id=83e8b2e2-51b6-4f39-a748-3ebd29c22aea \
+    --fixed-price=3960000.5555
+```
+
+##### Change Fixed Price Offer to Market Price Margin Based Offer
+Suppose you used `createoffer` to create a fixed price offer as follows:
+```
+$ ./bisq-cli --password=xyz --port=9998 createoffer \
+    --payment-account=f3c1ec8b-9761-458d-b13d-9039c6892413 \
+    --direction=SELL \
+    --currency-code=JPY \
+    --amount=0.125 \
+    --fixed-price=3960000.0000 \
+    --security-deposit=15.0 \
+    --fee-currency=BSQ
+```
+To change the fixed price offer to a market price margin based offer:
+```
+./bisq-cli --password=xyz --port=9998 editoffer \
+    --offer-id=83e8b2e2-51b6-4f39-a748-3ebd29c22aea \
+    --market-price-margin=0.5
+```
+Alternatively, you can also set a trigger price on the re-published, market price margin based offer.
+A trigger price on a SELL offer causes the offer to be automatically disabled when the market price
+falls below the trigger price.  In the `editoffer` example below, the SELL offer will be disabled when
+the JPY market price falls below 3960000.0000.
+
+```
+./bisq-cli --password=xyz --port=9998 editoffer \
+    --offer-id=83e8b2e2-51b6-4f39-a748-3ebd29c22aea \
+    --market-price-margin=0.5 \
+    --trigger-price=3960000.0000
+```
+On a BUY offer, a trigger price causes the BUY offer to be automatically disabled when the market price
+rises above the trigger price.
+
+_Note: Disabled offers never automatically re-enable; they can only be manually re-enabled via
+`editoffer --offer-id=<id> --enable=true`._
+
+#### Remove Trigger Price
+To remove a trigger price on a market price margin based offer, set the trigger price to 0:
+```
+./bisq-cli --password=xyz --port=9998 editoffer \
+    --offer-id=83e8b2e2-51b6-4f39-a748-3ebd29c22aea \
+    --trigger-price=0
+```
+
+#### Change Disabled Offer's Pricing Model and Enable It
+You can use `editoffer` to simultaneously change an offer's price details and disable or re-enable it.
+
+Suppose you have a disabled, fixed price offer, and want to change it to a market price margin based offer, set
+a trigger price, and re-enable it:
+```
+./bisq-cli --password=xyz --port=9998 editoffer \
+    --offer-id=83e8b2e2-51b6-4f39-a748-3ebd29c22aea \
+    --market-price-margin=0.5 \
+    --trigger-price=3960000.0000 \
+    --enable=true
+```
 
 ### Taking Offers
 

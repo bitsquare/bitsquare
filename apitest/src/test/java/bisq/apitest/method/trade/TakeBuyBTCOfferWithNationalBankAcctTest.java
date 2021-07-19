@@ -103,7 +103,8 @@ public class TakeBuyBTCOfferWithNationalBankAcctTest extends AbstractTradeTest {
                     0.00,
                     getDefaultBuyerSecurityDepositAsPercent(),
                     alicesPaymentAccount.getId(),
-                    TRADE_FEE_CURRENCY_CODE);
+                    TRADE_FEE_CURRENCY_CODE,
+                    0L);
             var offerId = alicesOffer.getId();
             assertFalse(alicesOffer.getIsCurrencyForMakerFeeBtc());
 
